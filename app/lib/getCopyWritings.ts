@@ -3,7 +3,7 @@ import {createOpenRouter} from "@openrouter/ai-sdk-provider";
 import {createOpenAICompatible} from "@ai-sdk/openai-compatible";
 import {generateText, streamText, Output} from "ai";
 import {config} from "dotenv";
-import {copyWritingSchema} from "./schemas";
+import {copyWritingSchema, imageAnalysisSchema} from "./schemas";
 config({quiet: true, debug: false});
 
 const mockArtworkAnalysis: ImageAnalysisType = {
@@ -69,34 +69,68 @@ const lmstudio = createOpenAICompatible({
 const openrouterLlm = "qwen/qwen3-vl-30b-a3b-instruct";
 const lmstudioLlm = "openai/gpt-oss-20b";
 
+function validateImageAnalysis(analysis: ImageAnalysisType) {
+	if (!analysis) throw Error("Analysis is empty");
+	try {
+		const validated = imageAnalysisSchema.parse(analysis);
+		console.log("PASSED VALIDATION");
+		return validated;
+	} catch (error: any) {
+		console.error("VALIDATION FAILED:", error.message);
+		throw new Error("INVALID ARTWORK ANALYSIS DATA");
+	}
+}
+
 async function getCopyWritings(
 	artworkAnalysis: ImageAnalysisType,
 ): Promise<CopyWritingType> {
-	const {output, partialOutputStream} = streamText({
-		model: openrouter.chat(openrouterLlm),
-		output: Output.object({schema: copyWritingSchema}),
-		maxOutputTokens: 500,
-		messages: [
-			{
-				role: "system",
-				content:
-					"You are an expert copywriter for Etsy artwork listings. Create compelling titles, tags, and descriptions based on the artwork analysis provided.",
-			},
-			{
-				role: "user",
-				content: `Based on this artwork analysis, create compelling and SEO-friendly copy for Etsy listing:
+	try {
+		//runtime validation before passing it to llm
+		const validArtworkAnalysis = validateImageAnalysis(artworkAnalysis);
 
-				${JSON.stringify(artworkAnalysis, null, 2)}
+		const {output, partialOutputStream} = streamText({
+			model: openrouter.chat(openrouterLlm),
+			output: Output.object({schema: copyWritingSchema}),
+			maxOutputTokens: 500,
+			messages: [
+				{
+					role: "system",
+					content:
+						"You are an expert copywriter for Etsy artwork listings. Create compelling titles, tags, and descriptions based on the artwork analysis provided.",
+				},
+				{
+					role: "user",
+					content: `Based on this artwork analysis, create compelling and SEO-friendly copy for Etsy listing:
+
+				${JSON.stringify(validArtworkAnalysis, null, 2)}
 
 				Output only valid JSON following the schema. Do not include any other text or keys, just the JSON object.
 				`,
-			},
-		],
-	});
-	for await (const partialObject of partialOutputStream) {
-		console.log(partialObject);
+				},
+			],
+		});
+		for await (const partialObject of partialOutputStream) {
+			console.log(partialObject);
+		}
+		return output;
+	} catch (error: any) {
+		if (error.message.includes("INVALID ARTWORK ANALYSIS DATA")) {
+			console.error(
+				"Failed to generate copywritings due to invalid artwork analysis data",
+			);
+			throw new Error(
+				`Failed to generate copywritings.\nError message: ${error.message}`,
+			);
+		} else {
+			console.error(
+				"Failed to generate copywritings. Unexpected errors",
+				error.message,
+			);
+			throw new Error(
+				`An unexpected error occurs while generating copywritings.\nError message: ${error.message}`,
+			);
+		}
 	}
-	return output;
 }
 
-getCopyWritings(mockArtworkAnalysis);
+// getCopyWritings(mockArtworkAnalysis);
