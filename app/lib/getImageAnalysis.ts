@@ -1,6 +1,5 @@
 import {createOpenRouter} from "@openrouter/ai-sdk-provider";
 import {generateText, Output, streamText} from "ai";
-import {z} from "zod";
 import fs from "node:fs";
 import path from "path";
 import {config} from "dotenv";

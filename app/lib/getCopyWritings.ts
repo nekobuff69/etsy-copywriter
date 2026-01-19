@@ -2,8 +2,6 @@ import type {ImageAnalysisType, CopyWritingType} from "./definitions";
 import {createOpenRouter} from "@openrouter/ai-sdk-provider";
 import {createOpenAICompatible} from "@ai-sdk/openai-compatible";
 import {generateText, streamText, Output} from "ai";
-import fs from "node:fs";
-import path from "path";
 import {config} from "dotenv";
 import {copyWritingSchema} from "./schemas";
 config({quiet: true, debug: false});
@@ -71,8 +69,10 @@ const lmstudio = createOpenAICompatible({
 const openrouterLlm = "qwen/qwen3-vl-30b-a3b-instruct";
 const lmstudioLlm = "openai/gpt-oss-20b";
 
-async function getCopyWritings(artworkAnalysis: ImageAnalysisType) {
-	const {output} = await generateText({
+async function getCopyWritings(
+	artworkAnalysis: ImageAnalysisType,
+): Promise<CopyWritingType> {
+	const {output, partialOutputStream} = streamText({
 		model: openrouter.chat(openrouterLlm),
 		output: Output.object({schema: copyWritingSchema}),
 		maxOutputTokens: 500,
@@ -93,7 +93,9 @@ async function getCopyWritings(artworkAnalysis: ImageAnalysisType) {
 			},
 		],
 	});
-	console.log(output);
+	for await (const partialObject of partialOutputStream) {
+		console.log(partialObject);
+	}
 	return output;
 }
 
