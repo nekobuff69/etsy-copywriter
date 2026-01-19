@@ -71,13 +71,16 @@ const lmstudioLlm = "openai/gpt-oss-20b";
 
 function validateImageAnalysis(analysis: ImageAnalysisType) {
 	if (!analysis) throw Error("Analysis is empty");
-	try {
-		const validated = imageAnalysisSchema.parse(analysis);
+
+	//Handling errors with Zod
+	const validated = imageAnalysisSchema.safeParse(analysis);
+	if (!validated.success) {
+		console.error(validated.error);
+		throw new Error(`invalid data error. ${JSON.stringify(validated.error)}`);
+	} else {
 		console.log("PASSED VALIDATION");
-		return validated;
-	} catch (error: any) {
-		console.error("VALIDATION FAILED:", error.message);
-		throw new Error("INVALID ARTWORK ANALYSIS DATA");
+		console.log(validated.data);
+		return validated.data;
 	}
 }
 
@@ -114,22 +117,12 @@ async function getCopyWritings(
 		}
 		return output;
 	} catch (error: any) {
-		if (error.message.includes("INVALID ARTWORK ANALYSIS DATA")) {
-			console.error(
-				"Failed to generate copywritings due to invalid artwork analysis data",
-			);
-			throw new Error(
-				`Failed to generate copywritings.\nError message: ${error.message}`,
-			);
-		} else {
-			console.error(
-				"Failed to generate copywritings. Unexpected errors",
-				error.message,
-			);
-			throw new Error(
-				`An unexpected error occurs while generating copywritings.\nError message: ${error.message}`,
-			);
-		}
+		console.error(
+			"Failed to generate copywritings due to invalid artwork analysis data",
+		);
+		throw new Error(
+			`Failed to generate copywritings.\nError message: ${error.message}`,
+		);
 	}
 }
 
