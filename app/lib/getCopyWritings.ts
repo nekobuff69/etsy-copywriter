@@ -126,4 +126,4 @@ async function getCopyWritings(
 	}
 }
 
-// getCopyWritings(mockArtworkAnalysis);
+getCopyWritings(mockArtworkAnalysis);
