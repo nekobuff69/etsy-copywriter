@@ -4,7 +4,7 @@ import fs from "node:fs";
 import path from "path";
 import {config} from "dotenv";
 import {fileTypeFromFile} from "file-type";
-import type {FileFormatInfo, ImageAnalysisType} from "@/app/lib/definitions";
+import type {FileFormatInfo, ImageAnalysisType} from "./definitions";
 import {imageAnalysisSchema} from "./schemas";
 
 //Turn off warning logs
