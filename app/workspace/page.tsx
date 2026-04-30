@@ -17,6 +17,7 @@ import {
 	Square,
 	ChevronLeft,
 	ClipboardList,
+	Plus,
 } from "lucide-react";
 import {Button} from "@/components/ui/button";
 import {Card, CardContent, CardHeader, CardTitle} from "@/components/ui/card";
@@ -25,6 +26,7 @@ import {Input} from "@/components/ui/input";
 import {Label} from "@/components/ui/label";
 import {Progress} from "@/components/ui/progress";
 import {Alert, AlertDescription} from "@/components/ui/alert";
+import {Badge} from "@/components/ui/badge";
 import {imageAnalysisSchema, copyWritingSchema} from "@/lib/schemas";
 import type {ImageAnalysisType, CopyWritingType} from "@/lib/definitions";
 import {
@@ -34,6 +36,8 @@ import {
 	clearHistory,
 	type HistorySession,
 } from "@/lib/history";
+import {newSessionView, viewHistory, isHistoryMode, type SessionView} from "@/lib/session";
+import {createThumbnail} from "@/lib/file-utils";
 
 function ThemeToggle() {
 	const {theme, setTheme} = useTheme();
@@ -64,6 +68,7 @@ function ThemeToggle() {
 export default function Workspace() {
 	const [file, setFile] = useState<File | null>(null);
 	const [previewUrl, setPreviewUrl] = useState<string | null>(null);
+	const [thumbnailUrl, setThumbnailUrl] = useState<string | null>(null);
 	const [analysis, setAnalysis] = useState<Partial<ImageAnalysisType> | null>(
 		null,
 	);
@@ -74,10 +79,13 @@ export default function Workspace() {
 	const [error, setError] = useState<string | null>(null);
 	const [history, setHistory] = useState<HistorySession[]>([]);
 	const [historyOpen, setHistoryOpen] = useState(false);
+	const [sessionView, setSessionView] = useState<SessionView>(newSessionView());
 
 	const fileInputRef = useRef<HTMLInputElement>(null);
 	const formDataRef = useRef<FormData | null>(null);
 	const abortRef = useRef<AbortController | null>(null);
+
+	const isHistory = isHistoryMode(sessionView);
 
 	const loadHistory = useCallback(() => {
 		setHistory(getSessions());
@@ -90,10 +98,12 @@ export default function Workspace() {
 	useEffect(() => {
 		if (!file) {
 			setPreviewUrl(null);
+			setThumbnailUrl(null);
 			return;
 		}
 		const url = URL.createObjectURL(file);
 		setPreviewUrl(url);
+		createThumbnail(file).then(setThumbnailUrl);
 		return () => URL.revokeObjectURL(url);
 	}, [file]);
 
@@ -133,9 +143,9 @@ export default function Workspace() {
 			if (object) {
 				setCopy(object);
 				setStage("done");
-				if (analysis && previewUrl) {
+				if (analysis && thumbnailUrl) {
 					saveSession({
-						thumbnail: previewUrl,
+						thumbnail: thumbnailUrl,
 						analysis: analysis as ImageAnalysisType,
 						copy: object,
 					});
@@ -158,6 +168,9 @@ export default function Workspace() {
 	const handleFile = (f: File | null) => {
 		setFile(f);
 		setError(null);
+		if (f && isHistory) {
+			setSessionView(newSessionView());
+		}
 	};
 
 	const onDrop = (e: React.DragEvent) => {
@@ -232,9 +245,9 @@ export default function Workspace() {
 					if (event.stage === "done") {
 						setAnalysis(event.analysis);
 						setCopy(event.copy);
-						if (previewUrl) {
+						if (thumbnailUrl) {
 							saveSession({
-								thumbnail: previewUrl,
+								thumbnail: thumbnailUrl,
 								analysis: event.analysis,
 								copy: event.copy,
 							});
@@ -293,18 +306,41 @@ export default function Workspace() {
 		setAnalysis(session.analysis);
 		setCopy(session.copy);
 		setPreviewUrl(session.thumbnail);
+		setThumbnailUrl(null);
+		setFile(null);
 		setStage("done");
 		setError(null);
+		setSessionView(viewHistory(session.id));
+	};
+
+	const startNewSession = () => {
+		setFile(null);
+		setPreviewUrl(null);
+		setThumbnailUrl(null);
+		setAnalysis(null);
+		setCopy(null);
+		setStage("idle");
+		setError(null);
+		setSessionView(newSessionView());
+		if (fileInputRef.current) {
+			fileInputRef.current.value = "";
+		}
 	};
 
 	const handleDeleteSession = (id: string) => {
 		deleteSession(id);
 		loadHistory();
+		if (sessionView.activeHistoryId === id) {
+			startNewSession();
+		}
 	};
 
 	const handleClearHistory = () => {
 		clearHistory();
 		loadHistory();
+		if (isHistory) {
+			startNewSession();
+		}
 	};
 
 	const updateAnalysisField = <K extends keyof ImageAnalysisType>(
@@ -346,61 +382,99 @@ export default function Workspace() {
 						onClick={() => setHistoryOpen(!historyOpen)}>
 						{historyOpen ? <ChevronLeft /> : <History />}
 					</Button>
-					<h1 className='text-lg font-semibold'>Etsy Copywriter</h1>
+					<h1 className='text-lg font-semibold'>
+						{isHistory ? "History Session" : "Etsy Copywriter"}
+					</h1>
+					{isHistory && (
+						<Badge variant='secondary' className='text-xs'>
+							Read-only
+						</Badge>
+					)}
 				</div>
-				<ThemeToggle />
+				<div className='flex items-center gap-2'>
+					{isHistory && (
+						<Button
+							variant='outline'
+							size='sm'
+							onClick={startNewSession}>
+							<Plus className='h-4 w-4 mr-1' />
+							New Session
+						</Button>
+					)}
+					<ThemeToggle />
+				</div>
 			</header>
 
 			<div className='flex'>
 				{historyOpen && (
-					<aside className='w-64 border-r bg-card p-3 space-y-3 shrink-0 h-[calc(100vh-57px)] overflow-y-auto'>
+					<aside className='w-72 border-r bg-card p-3 space-y-3 shrink-0 h-[calc(100vh-57px)] overflow-y-auto'>
 						<div className='flex items-center justify-between'>
 							<h2 className='font-medium text-sm'>History</h2>
-							{history.length > 0 && (
+							<div className='flex items-center gap-1'>
 								<Button
 									variant='ghost'
-									size='icon'
-									className='h-7 w-7'
-									onClick={handleClearHistory}>
-									<Trash2 className='h-4 w-4' />
+									size='sm'
+									className='h-7 text-xs'
+									onClick={startNewSession}>
+									<Plus className='h-3 w-3 mr-1' />
+									New
 								</Button>
-							)}
+								{history.length > 0 && (
+									<Button
+										variant='ghost'
+										size='icon'
+										className='h-7 w-7'
+										onClick={handleClearHistory}>
+										<Trash2 className='h-4 w-4' />
+									</Button>
+								)}
+							</div>
 						</div>
 						{history.length === 0 && (
 							<p className='text-xs text-muted-foreground'>No sessions yet.</p>
 						)}
-						{history.map((session) => (
-							<div
-								key={session.id}
-								className='group relative border rounded-md p-2 cursor-pointer hover:bg-accent'
-								onClick={() => restoreSession(session)}>
-								{session.thumbnail && (
-									<>
-										{/* eslint-disable-next-line @next/next/no-img-element */}
-										<img
-											src={session.thumbnail}
-											alt='Thumbnail'
-											className='w-full h-20 object-cover rounded mb-2'
-										/>
-									</>
-								)}
-								<div className='flex items-center justify-between'>
-									<span className='text-xs text-muted-foreground'>
-										{new Date(session.createdAt).toLocaleString()}
-									</span>
-									<Button
-										variant='ghost'
-										size='icon'
-										className='h-6 w-6 opacity-0 group-hover:opacity-100'
-										onClick={(e) => {
-											e.stopPropagation();
-											handleDeleteSession(session.id);
-										}}>
-										<X className='h-3 w-3' />
-									</Button>
+						{history.map((session) => {
+							const isActive = sessionView.activeHistoryId === session.id;
+							return (
+								<div
+									key={session.id}
+									className={`group relative border rounded-md p-2 cursor-pointer hover:bg-accent transition-colors ${
+										isActive ? "ring-1 ring-primary bg-primary/5" : ""
+									}`}
+									onClick={() => restoreSession(session)}>
+									{session.thumbnail && (
+										<>
+											{/* eslint-disable-next-line @next/next/no-img-element */}
+											<img
+												src={session.thumbnail}
+												alt='Thumbnail'
+												className='w-full h-20 object-cover rounded mb-2'
+											/>
+										</>
+									)}
+									<div className='flex items-center justify-between'>
+										<span className='text-xs text-muted-foreground'>
+											{new Date(session.createdAt).toLocaleString()}
+										</span>
+										{isActive && (
+											<Badge variant='outline' className='text-[10px] h-5 px-1'>
+												Active
+											</Badge>
+										)}
+										<Button
+											variant='ghost'
+											size='icon'
+											className='h-6 w-6 opacity-0 group-hover:opacity-100'
+											onClick={(e) => {
+												e.stopPropagation();
+												handleDeleteSession(session.id);
+											}}>
+											<X className='h-3 w-3' />
+										</Button>
+									</div>
 								</div>
-							</div>
-						))}
+							);
+						})}
 					</aside>
 				)}
 
@@ -408,6 +482,15 @@ export default function Workspace() {
 					{error && (
 						<Alert variant='destructive' className='mb-4'>
 							<AlertDescription>{error}</AlertDescription>
+						</Alert>
+					)}
+
+					{isHistory && (
+						<Alert className='mb-4'>
+							<AlertDescription>
+								You are viewing a past session. Create a{" "}
+								<strong>New Session</strong> to edit or generate new copy.
+							</AlertDescription>
 						</Alert>
 					)}
 
@@ -438,7 +521,7 @@ export default function Workspace() {
 
 					<div className='grid grid-cols-1 xl:grid-cols-3 gap-4'>
 						{/* Upload Zone */}
-						<Card>
+						<Card className={isHistory ? "opacity-60" : undefined}>
 							<CardHeader>
 								<CardTitle className='text-base flex items-center gap-2'>
 									<Upload className='h-4 w-4' />
@@ -449,8 +532,12 @@ export default function Workspace() {
 								<div
 									onDrop={onDrop}
 									onDragOver={(e) => e.preventDefault()}
-									onClick={() => fileInputRef.current?.click()}
-									className='border-2 border-dashed border-border rounded-lg p-6 text-center cursor-pointer hover:bg-accent/50 transition-colors'>
+									onClick={() => !isHistory && fileInputRef.current?.click()}
+									className={`border-2 border-dashed border-border rounded-lg p-6 text-center transition-colors ${
+										isHistory
+											? "cursor-not-allowed bg-muted"
+											: "cursor-pointer hover:bg-accent/50"
+									}`}>
 									{previewUrl ? (
 										<>
 											{/* eslint-disable-next-line @next/next/no-img-element */}
@@ -473,20 +560,21 @@ export default function Workspace() {
 										accept='image/jpeg,image/png,image/webp,image/gif'
 										className='hidden'
 										onChange={onFileInput}
+										disabled={isHistory}
 									/>
 								</div>
 
 								<div className='flex flex-wrap gap-2'>
 									<Button
 										onClick={startAnalysis}
-										disabled={!file || isLoading}
+										disabled={!file || isLoading || isHistory}
 										size='sm'>
 										<Play className='h-4 w-4 mr-1' />
 										Analyze
 									</Button>
 									<Button
 										onClick={runAll}
-										disabled={!file || isLoading}
+										disabled={!file || isLoading || isHistory}
 										size='sm'>
 										<Play className='h-4 w-4 mr-1' />
 										Run All
@@ -522,6 +610,7 @@ export default function Workspace() {
 															e.target.value,
 														)
 													}
+													readOnly={isHistory}
 													rows={2}
 												/>
 											</Field>
@@ -537,6 +626,7 @@ export default function Workspace() {
 															e.target.value,
 														)
 													}
+													readOnly={isHistory}
 												/>
 											</Field>
 											<Field label='Composition'>
@@ -551,6 +641,7 @@ export default function Workspace() {
 															e.target.value,
 														)
 													}
+													readOnly={isHistory}
 													rows={2}
 												/>
 											</Field>
@@ -567,6 +658,7 @@ export default function Workspace() {
 															e.target.value,
 														)
 													}
+													readOnly={isHistory}
 												/>
 											</Field>
 											<Field label='Surface'>
@@ -579,6 +671,7 @@ export default function Workspace() {
 															e.target.value,
 														)
 													}
+													readOnly={isHistory}
 												/>
 											</Field>
 											<Field label='Textures'>
@@ -593,6 +686,7 @@ export default function Workspace() {
 															e.target.value.split(",").map((s) => s.trim()),
 														)
 													}
+													readOnly={isHistory}
 													rows={2}
 												/>
 											</Field>
@@ -608,6 +702,7 @@ export default function Workspace() {
 															e.target.value.split(",").map((s) => s.trim()),
 														)
 													}
+													readOnly={isHistory}
 													rows={2}
 												/>
 											</Field>
@@ -627,6 +722,7 @@ export default function Workspace() {
 															e.target.value.split(",").map((s) => s.trim()),
 														)
 													}
+													readOnly={isHistory}
 													rows={2}
 												/>
 											</Field>
@@ -642,6 +738,7 @@ export default function Workspace() {
 															e.target.value,
 														)
 													}
+													readOnly={isHistory}
 													rows={2}
 												/>
 											</Field>
@@ -658,6 +755,7 @@ export default function Workspace() {
 															e.target.value,
 														)
 													}
+													readOnly={isHistory}
 													rows={2}
 												/>
 											</Field>
@@ -677,6 +775,7 @@ export default function Workspace() {
 															e.target.value.split(",").map((s) => s.trim()),
 														)
 													}
+													readOnly={isHistory}
 													rows={2}
 												/>
 											</Field>
@@ -692,6 +791,7 @@ export default function Workspace() {
 															e.target.value,
 														)
 													}
+													readOnly={isHistory}
 													rows={2}
 												/>
 											</Field>
@@ -708,6 +808,7 @@ export default function Workspace() {
 															e.target.value.split(",").map((s) => s.trim()),
 														)
 													}
+													readOnly={isHistory}
 													rows={2}
 												/>
 											</Field>
@@ -724,6 +825,7 @@ export default function Workspace() {
 															e.target.value,
 														)
 													}
+													readOnly={isHistory}
 													rows={2}
 												/>
 											</Field>
@@ -732,14 +834,14 @@ export default function Workspace() {
 										<div className='flex flex-wrap gap-2 pt-2'>
 											<Button
 												onClick={() => startCopy()}
-												disabled={copyLoading || !displayAnalysis}
+												disabled={copyLoading || !displayAnalysis || isHistory}
 												size='sm'>
 												<ClipboardList className='h-4 w-4 mr-1' />
 												Generate Copy
 											</Button>
 											<Button
 												onClick={startAnalysis}
-												disabled={analysisLoading || !file}
+												disabled={analysisLoading || !file || isHistory}
 												variant='outline'
 												size='sm'>
 												<RefreshCw className='h-4 w-4 mr-1' />
@@ -786,16 +888,26 @@ export default function Workspace() {
 																			? ({
 																					...prev,
 																					titles: {
-																						option1: prev.titles?.option1 ?? "",
-																						option2: prev.titles?.option2 ?? "",
-																						option3: prev.titles?.option3 ?? "",
-																						[opt]: e.target.value,
-																					},
+																							option1:
+																								prev.titles
+																									?.option1 ??
+																									"",
+																							option2:
+																									prev.titles
+																										?.option2 ??
+																									"",
+																							option3:
+																									prev.titles
+																										?.option3 ??
+																									"",
+																							[opt]: e.target.value,
+																						},
 																				} as Partial<CopyWritingType>)
 																			: prev,
 																	)
-																}
-															/>
+															}
+															readOnly={isHistory}
+														/>
 															<Button
 																variant='outline'
 																size='icon'
@@ -822,6 +934,7 @@ export default function Workspace() {
 															e.target.value.split(",").map((s) => s.trim()),
 														)
 													}
+													readOnly={isHistory}
 													rows={3}
 												/>
 												<Button
@@ -844,6 +957,7 @@ export default function Workspace() {
 													onChange={(e) =>
 														updateCopyField("description", e.target.value)
 													}
+													readOnly={isHistory}
 													rows={6}
 												/>
 												<Button
@@ -865,7 +979,7 @@ export default function Workspace() {
 											</Button>
 											<Button
 												onClick={() => startCopy()}
-												disabled={copyLoading || !displayAnalysis}
+												disabled={copyLoading || !displayAnalysis || isHistory}
 												variant='outline'
 												size='sm'>
 												<RefreshCw className='h-4 w-4 mr-1' />

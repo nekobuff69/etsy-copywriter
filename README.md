@@ -14,7 +14,10 @@ AI-powered Etsy listing copywriter for artwork sellers. Upload an image, review/
    - 3 title options
    - 5–8 SEO tags (ranked by relevance)
    - Compelling product description
-4. **History** — Sessions auto-saved to localStorage (max 20, LRU eviction) with thumbnails and timestamps.
+4. **History** — Sessions auto-saved to localStorage (max 20, LRU eviction) with compressed thumbnails and timestamps.
+   - Thumbnails are 200×200px JPEGs to stay under localStorage quota
+   - History sessions are read-only; click **New Session** to edit or generate new copy
+   - Active history card is highlighted in the sidebar
 
 ## Stack
 
@@ -63,6 +66,8 @@ lib/
   schemas.ts                   # Zod schemas
   definitions.ts               # TypeScript types
   history.ts                   # localStorage session manager (LRU @ 20)
+  session.ts                   # Session mode state (current vs history)
+  file-utils.ts                # File conversion + thumbnail generation
 docs/
   adr/                         # Architecture Decision Records
   agents/                      # Agent skills docs
@@ -70,6 +75,8 @@ docs/
 tests/
   getImageAnalysis.test.ts     # Pipeline tests
   history.test.ts              # History manager tests
+  session.test.ts              # Session mode tests
+  file-utils.test.ts           # File conversion + thumbnail tests
 ```
 
 ## Running Tests

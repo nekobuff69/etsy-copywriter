@@ -5,7 +5,7 @@
 - `pnpm dev` — Next.js dev server on `http://localhost:3000`
 - `pnpm build` — production build
 - `pnpm lint` — ESLint (Next.js flat config)
-- `pnpm test` — Vitest (`tests/getImageAnalysis.test.ts`, `tests/history.test.ts`)
+- `pnpm test` — Vitest (`tests/getImageAnalysis.test.ts`, `tests/history.test.ts`, `tests/session.test.ts`, `tests/file-utils.test.ts`)
 
 ## Environment
 - Requires `OPENROUTER_API_KEY` in `.env`
@@ -16,6 +16,7 @@
 ### Entrypoints
 - Next.js 16 App Router. Root page (`app/page.tsx`) redirects to `/workspace`.
 - Real app page is `app/workspace/page.tsx` — 3-zone layout: Upload, Analysis, Copy.
+- Session navigation: history sidebar with active highlighting, "New Session" button, read-only banner when viewing past sessions.
 
 ### API Routes (`app/api/`)
 - **`/api/analyze-image`** — POST FormData with `image` file → `streamObject` → `toTextStreamResponse()`
@@ -33,10 +34,20 @@
 - Two hook instances: one for `/api/analyze-image`, one for `/api/generate-copy`
 - `run-all` uses manual `fetch` + `ReadableStream` reader with NDJSON lines
 
+### Session Manager (`lib/session.ts`)
+- Session mode state machine: `newSessionView()`, `viewHistory(id)`, `isHistoryMode()`
+- Two modes: `"current"` (editable, can generate) and `"history"` (read-only view)
+
+### File Utilities (`lib/file-utils.ts`)
+- `fileToDataUrl(file)` — converts File to base64 data URL
+- `createThumbnail(file, options?)` — resizes image to max 200×200px JPEG at 70% quality
+  - Used for history thumbnails to stay well under localStorage quota
+
 ### History Manager (`lib/history.ts`)
 - localStorage-based session storage with LRU eviction at max 20 sessions
 - Interface: `getSessions`, `getSession`, `saveSession`, `deleteSession`, `clearHistory`
-- Each session stores: `id` (timestamp), `thumbnail` (data URL), `analysis`, `copy`, `createdAt`
+- Each session stores: `id` (timestamp), `thumbnail` (JPEG data URL), `analysis`, `copy`, `createdAt`
+- Thumbnails are compressed via `createThumbnail` before storage to avoid `QuotaExceededError`
 
 ## Critical Gotchas
 

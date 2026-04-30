@@ -9,6 +9,7 @@ import {
 import type {ImageAnalysisType, CopyWritingType} from "../lib/definitions";
 
 const storage: Record<string, string> = {};
+let quotaLimit = Infinity;
 
 beforeAll(() => {
 	(globalThis as Record<string, unknown>).window = globalThis;
@@ -16,6 +17,9 @@ beforeAll(() => {
 		value: {
 			getItem: (key: string) => storage[key] ?? null,
 			setItem: (key: string, value: string) => {
+				if (value.length > quotaLimit) {
+					throw new Error("QuotaExceededError: Setting the value exceeded the quota.");
+				}
 				storage[key] = value;
 			},
 			removeItem: (key: string) => {
@@ -28,6 +32,7 @@ beforeAll(() => {
 
 beforeEach(() => {
 	Object.keys(storage).forEach((k) => delete storage[k]);
+	quotaLimit = Infinity;
 });
 
 const mockAnalysis: ImageAnalysisType = {
@@ -113,5 +118,13 @@ describe("history", () => {
 		expect(stored.some((s) => s.id === sessions[0])).toBe(false);
 		expect(stored.some((s) => s.id === sessions[1])).toBe(false);
 		vi.restoreAllMocks();
+	});
+
+	it("should throw when thumbnails exceed localStorage quota", () => {
+		quotaLimit = 100_000;
+		const largeThumbnail = "data:image/png;base64," + "a".repeat(200_000);
+		expect(() => {
+			saveSession({thumbnail: largeThumbnail, analysis: mockAnalysis, copy: mockCopy});
+		}).toThrow("QuotaExceededError");
 	});
 });
