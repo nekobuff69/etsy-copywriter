@@ -52,7 +52,14 @@ app/
   page.tsx                     # Redirects to /workspace
   layout.tsx                   # Root layout with ThemeProvider + Toaster
   globals.css                  # Tailwind 4 + CSS variables
-  workspace/page.tsx           # Main 3-zone workspace UI
+  workspace/
+    page.tsx                   # Layout shell wiring hook to zone components
+    hooks/useWorkspace.ts      # All state, AI hooks, file lifecycle, history CRUD
+    components/UploadZone.tsx  # File drop, preview, action buttons
+    components/AnalysisZone.tsx# Structured analysis form with edit/regenerate
+    components/CopyZone.tsx    # Titles, tags, description with copy buttons
+    components/Header.tsx       # Title, history toggle, theme switcher
+    components/HistorySidebar.tsx# Session list with restore, delete, clear
   api/
     analyze-image/route.ts     # POST FormData → streamObject
     generate-copy/route.ts     # POST analysis JSON → streamObject
@@ -60,6 +67,7 @@ app/
 components/
   ui/                          # shadcn components (button, card, textarea, etc.)
   theme-provider.tsx           # next-themes wrapper
+  ThemeToggle.tsx              # Dark/light mode button
 lib/
   getImageAnalysis.ts          # Vision pipeline (Uint8Array → streamObject)
   getCopyWritings.ts           # Copy pipeline (analysis → streamObject)
