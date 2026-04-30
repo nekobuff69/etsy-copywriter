@@ -1,6 +1,6 @@
 "use client";
 
-import {useCallback, useEffect, useRef, useState} from "react";
+import {useCallback, useEffect, useRef, useState, useSyncExternalStore} from "react";
 import {experimental_useObject as useObject} from "@ai-sdk/react";
 import {useTheme} from "next-themes";
 import {toast} from "sonner";
@@ -35,9 +35,33 @@ import {
 	type HistorySession,
 } from "@/lib/history";
 
-export default function Workspace() {
+function ThemeToggle() {
 	const {theme, setTheme} = useTheme();
+	const mounted = useSyncExternalStore(
+		() => () => {},
+		() => true,
+		() => false,
+	);
 
+	if (!mounted) {
+		return (
+			<Button variant='ghost' size='icon' disabled>
+				<span className='h-4 w-4' />
+			</Button>
+		);
+	}
+
+	return (
+		<Button
+			variant='ghost'
+			size='icon'
+			onClick={() => setTheme(theme === "dark" ? "light" : "dark")}>
+			{theme === "dark" ? <Sun /> : <Moon />}
+		</Button>
+	);
+}
+
+export default function Workspace() {
 	const [file, setFile] = useState<File | null>(null);
 	const [previewUrl, setPreviewUrl] = useState<string | null>(null);
 	const [analysis, setAnalysis] = useState<Partial<ImageAnalysisType> | null>(
@@ -324,12 +348,7 @@ export default function Workspace() {
 					</Button>
 					<h1 className='text-lg font-semibold'>Etsy Copywriter</h1>
 				</div>
-				<Button
-					variant='ghost'
-					size='icon'
-					onClick={() => setTheme(theme === "dark" ? "light" : "dark")}>
-					{theme === "dark" ? <Sun /> : <Moon />}
-				</Button>
+				<ThemeToggle />
 			</header>
 
 			<div className='flex'>
