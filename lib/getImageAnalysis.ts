@@ -1,83 +1,50 @@
 import {createOpenRouter} from "@openrouter/ai-sdk-provider";
-import {generateText, Output, streamText} from "ai";
-import fs from "node:fs";
-import path from "path";
-import {config} from "dotenv";
-import {fileTypeFromFile} from "file-type";
-import type {FileFormatInfo, ImageAnalysisType} from "./definitions";
+import {streamObject} from "ai";
+import {fileTypeFromBuffer} from "file-type";
+import type {FileFormatInfo} from "./definitions";
 import {imageAnalysisSchema} from "./schemas";
 
-//Turn off warning logs
 globalThis.AI_SDK_LOG_WARNINGS = false;
-//Turn off dotenv logs
-config({quiet: true, debug: false});
 
-// Create an OpenRouter instance
 const openrouter = createOpenRouter({
 	apiKey: process.env.OPENROUTER_API_KEY,
 });
 const visionModel = "qwen/qwen3-vl-8b-instruct";
-
 const supportedImageFormat: string[] = ["jpg", "png", "webp", "gif"];
 
-// File format detection and validation before passing it to encodeImageToBase64 fucntion
 export async function validateFormat(
-	filePath: string,
+	imageBytes: Uint8Array,
 ): Promise<FileFormatInfo> {
-	if (!filePath || typeof filePath !== "string") {
-		throw Error("Invalid file path: must be a non-empty string.");
+	if (!imageBytes || imageBytes.length === 0) {
+		throw new Error("Invalid image data: must be non-empty Uint8Array.");
 	}
 
-	const fileType = await fileTypeFromFile(filePath);
+	const fileType = await fileTypeFromBuffer(imageBytes);
 	if (!fileType) throw new Error("File Type Undefined.");
 
-	const fileExtension = fileType.ext;
-	const fileMime = fileType.mime;
-	console.log(
-		`\nFileFormatInfo:\nExtension:${fileExtension}; MIME:${fileMime}`,
-	);
-	return {extension: fileExtension, mime: fileMime};
+	const {ext: extension, mime} = fileType;
+	return {extension, mime};
 }
 
-async function encodeImageToBase64(
-	filePath: string,
-	mime: string,
-): Promise<string> {
-	const imageBuffer = await fs.promises.readFile(filePath);
-	//check for empty file
-	if (imageBuffer.length === 0) throw new Error("File is empty");
+export async function analyzeImage(imageBytes: Uint8Array) {
+	const {extension, mime}: FileFormatInfo = await validateFormat(imageBytes);
 
-	const base64Image = imageBuffer.toString("base64");
-	console.log("FINNISHED ENCODING IMAGE");
-	return `data:${mime};base64, ${base64Image}`;
-}
-
-export async function getImageAnalysis(
-	filePath: string,
-): Promise<ImageAnalysisType> {
-	//File validation
-	const {extension, mime}: FileFormatInfo = await validateFormat(filePath);
-	//Terminate task if file is not valid.
 	if (!mime.startsWith("image/")) {
-		throw Error(
-			`Validation failed. Please use image files: ${supportedImageFormat.join()}`,
-		);
-	} else if (!supportedImageFormat.includes(extension)) {
 		throw new Error(
-			`Make sure your image is one of the following format: ${supportedImageFormat.join()}`,
+			`Validation failed. Please use image files: ${supportedImageFormat.join(", ")}`,
+		);
+	}
+	if (!supportedImageFormat.includes(extension)) {
+		throw new Error(
+			`Make sure your image is one of the following formats: ${supportedImageFormat.join(", ")}`,
 		);
 	}
 
-	console.log("VALIDATION PASSED");
-	console.log("ENCODING IMAGE");
-	const imageEncoded = await encodeImageToBase64(filePath, mime);
+	const base64Image = `data:${mime};base64,${Buffer.from(imageBytes).toString("base64")}`;
 
-	//send request to AI model
-	//return a structured output following imageAnalysisSchema
-	console.log("GENERATING IMAGE ANALYSIS");
-	const {output, partialOutputStream} = streamText({
+	return streamObject({
 		model: openrouter.chat(visionModel),
-		output: Output.object({schema: imageAnalysisSchema}),
+		schema: imageAnalysisSchema,
 		messages: [
 			{
 				role: "system",
@@ -88,26 +55,14 @@ export async function getImageAnalysis(
 				content: [
 					{
 						type: "text",
-						text: "describe this image in details",
+						text: "Describe this image in detail.",
 					},
 					{
 						type: "image",
-						image: imageEncoded,
+						image: base64Image,
 					},
 				],
 			},
 		],
-		maxOutputTokens: 500,
-		onError({error}) {
-			console.error(error);
-		},
 	});
-	for await (const partialObject of partialOutputStream) {
-		console.log(partialObject);
-	}
-	return output;
 }
-
-const imagePath = "./public/test.png";
-const absolutePath = path.join(process.cwd(), imagePath);
-getImageAnalysis(absolutePath);
