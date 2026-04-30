@@ -1,7 +1,5 @@
+import {redirect} from "next/navigation";
+
 export default function Home() {
-	return (
-		<main>
-			<h1>This is an empty page</h1>
-		</main>
-	);
+	redirect("/workspace");
 }

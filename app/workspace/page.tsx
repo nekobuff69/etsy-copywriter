@@ -231,13 +231,23 @@ export default function Workspace() {
 	};
 
 	const stop = () => {
-		if (analysisLoading) stopAnalysis();
-		if (copyLoading) stopCopy();
+		stopAnalysis();
+		stopCopy();
 		if (abortRef.current) {
 			abortRef.current.abort();
 			abortRef.current = null;
 		}
 		setStage("idle");
+	};
+
+	const stopZoneAnalysis = () => {
+		stopAnalysis();
+		setStage((prev) => (prev === "analyzing" ? "idle" : prev));
+	};
+
+	const stopZoneCopy = () => {
+		stopCopy();
+		setStage((prev) => (prev === "generating" ? "done" : prev));
 	};
 
 	const copyText = async (text: string) => {
@@ -716,6 +726,15 @@ export default function Workspace() {
 												<RefreshCw className='h-4 w-4 mr-1' />
 												Regenerate
 											</Button>
+											{analysisLoading && (
+												<Button
+													onClick={stopZoneAnalysis}
+													variant='destructive'
+													size='sm'>
+													<Square className='h-4 w-4 mr-1' />
+													Stop
+												</Button>
+											)}
 										</div>
 									</div>
 								) : (
@@ -833,6 +852,15 @@ export default function Workspace() {
 												<RefreshCw className='h-4 w-4 mr-1' />
 												Regenerate
 											</Button>
+											{copyLoading && (
+												<Button
+													onClick={stopZoneCopy}
+													variant='destructive'
+													size='sm'>
+													<Square className='h-4 w-4 mr-1' />
+													Stop
+												</Button>
+											)}
 										</div>
 									</div>
 								) : (
