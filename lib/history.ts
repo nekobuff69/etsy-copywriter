@@ -73,6 +73,16 @@ export function saveSession(params: {
 }
 
 /**
+ * Enriched image group for display in the History page.
+ */
+export interface ImageGroup {
+	imageHash: string | null;
+	thumbnail: string;
+	sessions: HistorySession[];
+	latestDate: number;
+}
+
+/**
  * Group sessions by imageHash. Sessions without a hash get their own solo group.
  */
 export function groupSessionsByImageHash(
@@ -86,6 +96,32 @@ export function groupSessionsByImageHash(
 		groups.set(key, existing);
 	}
 	return groups;
+}
+
+/**
+ * Group sessions by imageHash and return enriched ImageGroup[] sorted by latestDate desc.
+ * Used by the History page to render expandable group cards.
+ */
+export function groupSessionsByImage(
+	sessions: HistorySession[],
+): ImageGroup[] {
+	const rawGroups = groupSessionsByImageHash(sessions);
+	const groups: ImageGroup[] = [];
+
+	for (const [key, groupSessions] of rawGroups) {
+		const imageHash = key.startsWith("solo-") ? null : key;
+		const latestDate = Math.max(...groupSessions.map((s) => s.createdAt));
+		const thumbnail = groupSessions.find((s) => s.thumbnail)?.thumbnail ?? "";
+
+		groups.push({
+			imageHash,
+			thumbnail,
+			sessions: groupSessions,
+			latestDate,
+		});
+	}
+
+	return groups.sort((a, b) => b.latestDate - a.latestDate);
 }
 
 export function deleteSession(id: string) {

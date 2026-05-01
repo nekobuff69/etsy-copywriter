@@ -6,6 +6,7 @@ import {
 	clearHistory,
 	getSession,
 	groupSessionsByImageHash,
+	groupSessionsByImage,
 } from "../lib/history";
 import type {ImageAnalysisType, CopyWritingType} from "../lib/definitions";
 
@@ -176,11 +177,70 @@ describe("history", () => {
 		});
 	});
 
-	describe("groupSessionsByImageHash", () => {
-		it("should group sessions with the same imageHash", () => {
+	describe("groupSessionsByImage", () => {
+		it("should return enriched groups sorted by latestDate desc", () => {
+			let tick = 1000;
+			vi.spyOn(Date, "now").mockImplementation(() => tick++);
 			saveSession({ thumbnail: "a", analysis: mockAnalysis, copy: mockCopy, imageHash: "hash1" });
 			saveSession({ thumbnail: "b", analysis: mockAnalysis, copy: mockCopy, imageHash: "hash1" });
 			saveSession({ thumbnail: "c", analysis: mockAnalysis, copy: mockCopy, imageHash: "hash2" });
+			vi.restoreAllMocks();
+
+			const groups = groupSessionsByImage(getSessions());
+			expect(groups.length).toBe(2);
+			// Sorted by latestDate desc — hash2 has the newest session (tick=1002)
+			expect(groups[0].imageHash).toBe("hash2");
+			expect(groups[1].imageHash).toBe("hash1");
+		});
+
+		it("should set imageHash to null for solo groups", () => {
+			let tick = 5000;
+			vi.spyOn(Date, "now").mockImplementation(() => tick++);
+			saveSession({ thumbnail: "solo-thumb", analysis: mockAnalysis, copy: mockCopy });
+			vi.restoreAllMocks();
+
+			const groups = groupSessionsByImage(getSessions());
+			expect(groups.length).toBe(1);
+			expect(groups[0].imageHash).toBeNull();
+			expect(groups[0].thumbnail).toBe("solo-thumb");
+			expect(groups[0].sessions.length).toBe(1);
+		});
+
+		it("should return empty array for no sessions", () => {
+			const groups = groupSessionsByImage([]);
+			expect(groups).toEqual([]);
+		});
+
+		it("should use first available thumbnail for group", () => {
+			saveSession({ thumbnail: "", analysis: mockAnalysis, copy: mockCopy, imageHash: "hash1" });
+			saveSession({ thumbnail: "thumb-data", analysis: mockAnalysis, copy: mockCopy, imageHash: "hash1" });
+
+			const groups = groupSessionsByImage(getSessions());
+			expect(groups[0].thumbnail).toBe("thumb-data");
+		});
+
+		it("should compute correct latestDate from sessions", () => {
+			let tick = 3000;
+			vi.spyOn(Date, "now").mockImplementation(() => tick++);
+			saveSession({ thumbnail: "a", analysis: mockAnalysis, copy: mockCopy, imageHash: "hash1" });
+			saveSession({ thumbnail: "b", analysis: mockAnalysis, copy: mockCopy, imageHash: "hash1" });
+			saveSession({ thumbnail: "c", analysis: mockAnalysis, copy: mockCopy, imageHash: "hash1" });
+			vi.restoreAllMocks();
+
+			const groups = groupSessionsByImage(getSessions());
+			expect(groups[0].latestDate).toBe(3005);
+			expect(groups[0].sessions.length).toBe(3);
+		});
+	});
+
+	describe("groupSessionsByImageHash", () => {
+		it("should group sessions with the same imageHash", () => {
+			let tick = 7000;
+			vi.spyOn(Date, "now").mockImplementation(() => tick++);
+			saveSession({ thumbnail: "a", analysis: mockAnalysis, copy: mockCopy, imageHash: "hash1" });
+			saveSession({ thumbnail: "b", analysis: mockAnalysis, copy: mockCopy, imageHash: "hash1" });
+			saveSession({ thumbnail: "c", analysis: mockAnalysis, copy: mockCopy, imageHash: "hash2" });
+			vi.restoreAllMocks();
 
 			const groups = groupSessionsByImageHash(getSessions());
 			expect(groups.size).toBe(2);
@@ -189,7 +249,7 @@ describe("history", () => {
 		});
 
 		it("should treat sessions without imageHash as solo groups", () => {
-			let tick = 5000;
+			let tick = 8000;
 			vi.spyOn(Date, "now").mockImplementation(() => tick++);
 			saveSession({ thumbnail: "a", analysis: mockAnalysis, copy: mockCopy }); // no hash
 			saveSession({ thumbnail: "b", analysis: mockAnalysis, copy: mockCopy }); // no hash
