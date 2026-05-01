@@ -5,6 +5,7 @@ import { Header } from "./components/Header";
 import { UploadZone } from "./components/UploadZone";
 import { AnalysisZone } from "./components/AnalysisZone";
 import { CopyZone } from "./components/CopyZone";
+import { DebugPanel } from "./components/DebugPanel";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Progress } from "@/components/ui/progress";
 import { Button } from "@/components/ui/button";
@@ -107,6 +108,16 @@ export default function WorkspacePage() {
 						hasAnalysis={!!analysis.displayAnalysis}
 					/>
 				</div>
+
+				<DebugPanel
+					stage={global.stage}
+					isLoading={global.isLoading}
+					analysisLoading={analysis.analysisLoading}
+					copyLoading={copy.copyLoading}
+					error={global.error}
+					analysis={analysis.displayAnalysis}
+					copy={copy.displayCopy}
+				/>
 			</main>
 		</div>
 	);

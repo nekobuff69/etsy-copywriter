@@ -36,10 +36,12 @@
 - **Copy Generation** (`lib/getCopyWritings.ts`): Zod validate analysis → `streamObject` with LLM → returns `StreamObjectResult`
 - Default models: vision `qwen/qwen3-vl-8b-instruct`, copy `qwen/qwen3-vl-30b-a3b-instruct` (both OpenRouter)
 - Both functions are pure — **no self-executing calls**. Safe to import.
+- Both `streamObject` calls include `schemaName`, `schemaDescription`, and explicit schema structure in the system prompt — required because Qwen through OpenRouter ignores the schema unless it's spelled out in the prompt
 
 ### Client Streaming
 - Uses `experimental_useObject` (aliased as `useObject`) from `@ai-sdk/react`
 - Two hook instances: one for `/api/analyze-image`, one for `/api/generate-copy`
+- Both `onFinish` callbacks check the `error` property (TypeValidationError) — if the model returns JSON that doesn't match the schema, the error is surfaced to the user
 - `run-all` uses manual `fetch` + `ReadableStream` reader with NDJSON lines
 
 ### Session Manager (`lib/session.ts`)
@@ -63,7 +65,11 @@
 Original `lib/getImageAnalysis.ts` and `lib/getCopyWritings.ts` had top-level invocations that triggered real API calls on import. These were removed during refactoring. Importing either module is now safe.
 
 ### AI SDK deprecation note
-`streamObject` is deprecated in `ai` v6 in favor of `streamText` + `output`, but there is no matching client hook for the replacement yet. We use `streamObject` server-side + `experimental_useObject` client-side. Migration path: swap `streamObject` → `streamText` + `output` on server only when the hook catches up.
+`streamObject` is deprecated in `ai` v6 in favor of `streamText` + `output`. We attempted migration but `streamText` + `Output.object()` with `toUIMessageStreamResponse()` produces only text-delta SSE chunks for Qwen via OpenRouter — the model outputs prose instead of structured JSON, and the SDK can't enforce the schema without provider-side structured output support.
+
+**Resolution**: Keep `streamObject` (deprecated but functional) with `toTextStreamResponse()`. To force schema-compliant JSON, we embed the full schema structure in the system prompt and pass `schemaName`/`schemaDescription`. This makes Qwen output the correct nested JSON shape.
+
+`streamObject` client-side: `useObject` `onFinish` callbacks check `{ object, error }` — if `error` is a `TypeValidationError`, it's surfaced to the user via the error alert.
 
 ### FormData + useObject
 `useObject` does not natively support FormData. The analyze-image hook provides a custom `fetch` function that reads `formDataRef.current` and sends it via `fetch(url, {method: "POST", body: formDataRef.current})`.
@@ -78,8 +84,10 @@ Original `lib/getImageAnalysis.ts` and `lib/getCopyWritings.ts` had top-level in
 - Aliases: `@/components`, `@/lib`, `@/hooks`
 - `components.json` utils alias updated to `@/lib/utils` (was `@/app/lib/utils`)
 
-### `globalThis.AI_SDK_LOG_WARNINGS = false`
-Suppresses SDK warnings in both pipeline modules.
+### Debug mechanics
+- Console logs tagged `[PIPELINE]` in `usePipeline.ts` (startAnalysis, startCopy) and `useWorkspace.ts` (stage transitions)
+- Collapsible `<DebugPanel>` component at the bottom of the workspace page — shows stage badge, loading states, error messages, and raw JSON of analysis/copy objects
+- `grep '\[PIPELINE\]'` to find all debug output
 
 ## File Conventions
 - Path alias `@/*` maps to project root

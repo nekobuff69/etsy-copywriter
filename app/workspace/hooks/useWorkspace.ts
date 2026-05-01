@@ -163,6 +163,7 @@ export function useWorkspace(): {
 
 	const onStateChange = useCallback(
 		(s: "idle" | "analyzing" | "generating" | "done" | "error") => {
+			console.log(`[PIPELINE] stage → ${s}`);
 			setStage(s);
 			if (s !== "error") setError(null);
 		},

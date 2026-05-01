@@ -44,17 +44,27 @@ export async function analyzeImage(
 	return streamObject({
 		model,
 		schema: imageAnalysisSchema,
+		schemaName: "ImageAnalysis",
+		schemaDescription:
+			"Detailed artwork analysis with core attributes, technical specs, visual identity, and marketing hooks",
 		messages: [
 			{
 				role: "system",
-				content: "You are an experienced art critic.",
+				content: `You are an experienced art critic. Analyze the image and respond with a JSON object that has EXACTLY these four top-level keys:
+
+1. "core_attributes" — object with: subject (string), orientation (one of: "landscape", "portrait", "square"), composition (string)
+2. "technical_specs" — object with: medium (string), surface (string), textures (array of strings), visible_tools (array of strings)
+3. "visual_identity" — object with: primary_colors (array of strings), lighting_vibe (string), artistic_style (string)
+4. "marketing_hooks" — object with: emotional_keywords (array of strings), symbolism (string), suggested_placement (array of strings), unique_handcrafted_details (string)
+
+Output ONLY valid JSON with this exact structure. Do not add extra keys or use different key names.`,
 			},
 			{
 				role: "user",
 				content: [
 					{
 						type: "text",
-						text: "Describe this image in detail.",
+						text: "Analyze this image in detail following the structure above.",
 					},
 					{
 						type: "image",

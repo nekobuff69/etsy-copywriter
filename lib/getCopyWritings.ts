@@ -25,19 +25,27 @@ export function generateCopy(
 	return streamObject({
 		model,
 		schema: copyWritingSchema,
+		schemaName: "CopyWriting",
+		schemaDescription:
+			"Etsy listing copy with titles, tags, and description",
 		messages: [
 			{
 				role: "system",
-				content:
-					"You are an expert copywriter for Etsy artwork listings. Create compelling titles, tags, and descriptions based on the artwork analysis provided.",
+				content: `You are an expert copywriter for Etsy artwork listings. Create compelling titles, tags, and descriptions based on the artwork analysis provided.
+
+Respond with a JSON object that has EXACTLY these three top-level keys:
+
+1. "titles" — object with: option1 (string), option2 (string), option3 (string)
+2. "tags" — array of 5-8 SEO strings, ordered by relevance
+3. "description" — a compelling product description string
+
+Output ONLY valid JSON with this exact structure. Do not add extra keys or use different key names.`,
 			},
 			{
 				role: "user",
 				content: `Based on this artwork analysis, create compelling and SEO-friendly copy for an Etsy listing:
 
 ${JSON.stringify(validArtworkAnalysis, null, 2)}
-
-Output only valid JSON following the schema. Do not include any other text or keys, just the JSON object.
 `,
 			},
 		],

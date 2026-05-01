@@ -78,14 +78,19 @@ export function usePipeline(deps: UsePipelineDeps) {
 				headers: llmHeaders(),
 			});
 		},
-		onFinish: ({ object }) => {
+		onFinish: ({ object, error }) => {
+			if (error) {
+				onError(`Analysis failed: ${error.message}`);
+				return;
+			}
 			if (object) {
 				setAnalysis(object);
 				onAnalysisFinish(object);
 			}
 		},
 		onError: (err) => {
-			onError(err.message);
+			const msg = err?.message ?? String(err);
+			onError(msg);
 		},
 	});
 
@@ -99,7 +104,11 @@ export function usePipeline(deps: UsePipelineDeps) {
 		api: "/api/generate-copy",
 		schema: copyWritingSchema,
 		headers: llmHeaders,
-		onFinish: ({ object }) => {
+		onFinish: ({ object, error }) => {
+			if (error) {
+				onError(`Copy generation failed: ${error.message}`);
+				return;
+			}
 			if (object) {
 				setCopy(object);
 				onCopyFinish(object);
@@ -109,13 +118,17 @@ export function usePipeline(deps: UsePipelineDeps) {
 			}
 		},
 		onError: (err) => {
-			onError(err.message);
+			const msg = err?.message ?? String(err);
+			onError(msg);
 		},
 	});
 
 	const startAnalysis = useCallback(
 		(file: File | null) => {
-			if (!file) return;
+			if (!file) {
+				console.warn("[PIPELINE] startAnalysis: no file");
+				return;
+			}
 			const fd = new FormData();
 			fd.append("image", file);
 			formDataRef.current = fd;
@@ -130,7 +143,10 @@ export function usePipeline(deps: UsePipelineDeps) {
 	const startCopy = useCallback(
 		(data?: ImageAnalysisType) => {
 			const payload = data ?? (analysis as ImageAnalysisType | undefined);
-			if (!payload) return;
+			if (!payload) {
+				console.warn("[PIPELINE] startCopy: no analysis payload");
+				return;
+			}
 			onStateChange("generating");
 			setCopy(null);
 			submitCopy(payload);
