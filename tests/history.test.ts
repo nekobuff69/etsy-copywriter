@@ -5,6 +5,7 @@ import {
 	deleteSession,
 	clearHistory,
 	getSession,
+	groupSessionsByImageHash,
 } from "../lib/history";
 import type {ImageAnalysisType, CopyWritingType} from "../lib/definitions";
 
@@ -126,5 +127,81 @@ describe("history", () => {
 		expect(() => {
 			saveSession({thumbnail: largeThumbnail, analysis: mockAnalysis, copy: mockCopy});
 		}).toThrow("QuotaExceededError");
+	});
+
+	describe("saveSession with new fields", () => {
+		it("should store imageHash when provided", () => {
+			const session = saveSession({
+				thumbnail: "thumb",
+				analysis: mockAnalysis,
+				copy: mockCopy,
+				imageHash: "abc123",
+			});
+			expect(session.imageHash).toBe("abc123");
+		});
+
+		it("should store visionModel and copyModel when provided", () => {
+			const session = saveSession({
+				thumbnail: "thumb",
+				analysis: mockAnalysis,
+				copy: mockCopy,
+				visionModel: "qwen/qwen3-vl-8b-instruct",
+				copyModel: "qwen/qwen3-vl-30b-a3b-instruct",
+			});
+			expect(session.visionModel).toBe("qwen/qwen3-vl-8b-instruct");
+			expect(session.copyModel).toBe("qwen/qwen3-vl-30b-a3b-instruct");
+		});
+
+		it("should store baseURL and providerLabel when provided", () => {
+			const session = saveSession({
+				thumbnail: "thumb",
+				analysis: mockAnalysis,
+				copy: mockCopy,
+				baseURL: "https://openrouter.ai/api/v1",
+				providerLabel: "openrouter",
+			});
+			expect(session.baseURL).toBe("https://openrouter.ai/api/v1");
+			expect(session.providerLabel).toBe("openrouter");
+		});
+
+		it("should allow optional new fields to be omitted (backward compat)", () => {
+			const session = saveSession({
+				thumbnail: "thumb",
+				analysis: mockAnalysis,
+				copy: mockCopy,
+			});
+			expect(session.imageHash).toBeUndefined();
+			expect(session.visionModel).toBeUndefined();
+			expect(session.copyModel).toBeUndefined();
+		});
+	});
+
+	describe("groupSessionsByImageHash", () => {
+		it("should group sessions with the same imageHash", () => {
+			saveSession({ thumbnail: "a", analysis: mockAnalysis, copy: mockCopy, imageHash: "hash1" });
+			saveSession({ thumbnail: "b", analysis: mockAnalysis, copy: mockCopy, imageHash: "hash1" });
+			saveSession({ thumbnail: "c", analysis: mockAnalysis, copy: mockCopy, imageHash: "hash2" });
+
+			const groups = groupSessionsByImageHash(getSessions());
+			expect(groups.size).toBe(2);
+			expect(groups.get("hash1")?.length).toBe(2);
+			expect(groups.get("hash2")?.length).toBe(1);
+		});
+
+		it("should treat sessions without imageHash as solo groups", () => {
+			let tick = 5000;
+			vi.spyOn(Date, "now").mockImplementation(() => tick++);
+			saveSession({ thumbnail: "a", analysis: mockAnalysis, copy: mockCopy }); // no hash
+			saveSession({ thumbnail: "b", analysis: mockAnalysis, copy: mockCopy }); // no hash
+			vi.restoreAllMocks();
+
+			const groups = groupSessionsByImageHash(getSessions());
+			expect(groups.size).toBe(2);
+		});
+
+		it("should return an empty map for no sessions", () => {
+			const groups = groupSessionsByImageHash([]);
+			expect(groups.size).toBe(0);
+		});
 	});
 });

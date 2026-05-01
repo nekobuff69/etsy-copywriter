@@ -14,6 +14,17 @@ vi.mock("@/lib/getCopyWritings", () => ({
 	generateCopy: (...args: unknown[]) => mockGenerateCopy(...args),
 }));
 
+vi.mock("@/lib/llm-provider", () => ({
+	createProvider: vi.fn(() => vi.fn((model: string) => model)),
+}));
+
+vi.mock("@/lib/api-settings", () => ({
+	parseSettingsFromRequest: vi.fn(() => ({
+		vision: { baseURL: "https://openrouter.ai/api/v1", apiKey: "test-key", model: "qwen/qwen3-vl-8b-instruct" },
+		copy: { baseURL: "https://openrouter.ai/api/v1", apiKey: "test-key", model: "qwen/qwen3-vl-30b-a3b-instruct" },
+	})),
+}));
+
 import {POST} from "../app/api/run-all/route";
 import type {NextRequest} from "next/server";
 import type {ImageAnalysisType} from "../lib/definitions";

@@ -6,6 +6,11 @@ export interface HistorySession {
 	analysis: ImageAnalysisType;
 	copy: CopyWritingType;
 	createdAt: number;
+	imageHash?: string;
+	visionModel?: string;
+	copyModel?: string;
+	baseURL?: string;
+	providerLabel?: string;
 }
 
 const STORAGE_KEY = "etsy-copywriter-history";
@@ -38,6 +43,11 @@ export function saveSession(params: {
 	thumbnail: string;
 	analysis: ImageAnalysisType;
 	copy: CopyWritingType;
+	imageHash?: string;
+	visionModel?: string;
+	copyModel?: string;
+	baseURL?: string;
+	providerLabel?: string;
 }): HistorySession {
 	const sessions = readSessions();
 	const session: HistorySession = {
@@ -46,6 +56,11 @@ export function saveSession(params: {
 		analysis: params.analysis,
 		copy: params.copy,
 		createdAt: Date.now(),
+		imageHash: params.imageHash,
+		visionModel: params.visionModel,
+		copyModel: params.copyModel,
+		baseURL: params.baseURL,
+		providerLabel: params.providerLabel,
 	};
 
 	sessions.unshift(session);
@@ -55,6 +70,22 @@ export function saveSession(params: {
 
 	writeSessions(sessions);
 	return session;
+}
+
+/**
+ * Group sessions by imageHash. Sessions without a hash get their own solo group.
+ */
+export function groupSessionsByImageHash(
+	sessions: HistorySession[],
+): Map<string, HistorySession[]> {
+	const groups = new Map<string, HistorySession[]>();
+	for (const session of sessions) {
+		const key = session.imageHash ?? `solo-${session.id}`;
+		const existing = groups.get(key) ?? [];
+		existing.push(session);
+		groups.set(key, existing);
+	}
+	return groups;
 }
 
 export function deleteSession(id: string) {

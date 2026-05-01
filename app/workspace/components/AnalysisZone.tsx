@@ -1,11 +1,13 @@
 import type { ReactNode } from "react";
 import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Textarea } from "@/components/ui/textarea";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { ClipboardList, RefreshCw, Square } from "lucide-react";
 import type { ImageAnalysisType } from "@/lib/definitions";
+import { getStoredSettings } from "@/lib/settings";
 
 interface AnalysisZoneProps {
 	displayAnalysis: Partial<ImageAnalysisType> | null;
@@ -283,6 +285,11 @@ export function AnalysisZone({
 					</div>
 				</div>
 			</CardContent>
+			<div className="px-6 pb-4">
+				<Badge variant="secondary" className="text-[10px] font-mono">
+					Vision: {getStoredSettings().vision.model}
+				</Badge>
+			</div>
 		</Card>
 	);
 }

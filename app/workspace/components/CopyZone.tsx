@@ -1,10 +1,12 @@
 import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Textarea } from "@/components/ui/textarea";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { ClipboardList, RefreshCw, Square, Copy } from "lucide-react";
 import type { CopyWritingType, ImageAnalysisType } from "@/lib/definitions";
+import { getStoredSettings } from "@/lib/settings";
 
 interface CopyZoneProps {
 	displayCopy: Partial<CopyWritingType> | null;
@@ -151,6 +153,11 @@ export function CopyZone({
 					</div>
 				</div>
 			</CardContent>
+			<div className="px-6 pb-4">
+				<Badge variant="secondary" className="text-[10px] font-mono">
+					Copy: {getStoredSettings().copy.model}
+				</Badge>
+			</div>
 		</Card>
 	);
 }

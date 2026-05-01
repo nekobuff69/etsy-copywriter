@@ -1,18 +1,11 @@
-import {vi, describe, it, expect, beforeEach} from "vitest";
-import {validateFormat, analyzeImage} from "../lib/getImageAnalysis";
-import {fileTypeFromBuffer} from "file-type";
-import {streamObject} from "ai";
+import { vi, describe, it, expect, beforeEach } from "vitest";
+import { validateFormat, analyzeImage } from "../lib/getImageAnalysis";
+import { fileTypeFromBuffer } from "file-type";
+import { streamObject } from "ai";
+import type { LanguageModel } from "ai";
 
 vi.mock("file-type");
 vi.mock("ai");
-vi.mock("@openrouter/ai-sdk-provider", () => ({
-	createOpenRouter: vi.fn(() => ({
-		chat: vi.fn(() => "mock-model"),
-	})),
-}));
-vi.mock("dotenv", () => ({
-	config: vi.fn(),
-}));
 
 const mockFileTypeFromBuffer = vi.mocked(fileTypeFromBuffer);
 const mockStreamObject = vi.mocked(streamObject);
@@ -23,9 +16,9 @@ describe("validateFormat", () => {
 	});
 
 	it("should return file info for valid image", async () => {
-		mockFileTypeFromBuffer.mockResolvedValue({ext: "jpg", mime: "image/jpeg"});
+		mockFileTypeFromBuffer.mockResolvedValue({ ext: "jpg", mime: "image/jpeg" });
 		const result = await validateFormat(new Uint8Array([1, 2, 3]));
-		expect(result).toEqual({extension: "jpg", mime: "image/jpeg"});
+		expect(result).toEqual({ extension: "jpg", mime: "image/jpeg" });
 	});
 
 	it("should throw for empty Uint8Array", async () => {
@@ -42,9 +35,9 @@ describe("validateFormat", () => {
 	});
 
 	it("should handle png", async () => {
-		mockFileTypeFromBuffer.mockResolvedValue({ext: "png", mime: "image/png"});
+		mockFileTypeFromBuffer.mockResolvedValue({ ext: "png", mime: "image/png" });
 		const result = await validateFormat(new Uint8Array([1]));
-		expect(result).toEqual({extension: "png", mime: "image/png"});
+		expect(result).toEqual({ extension: "png", mime: "image/png" });
 	});
 });
 
@@ -56,23 +49,28 @@ describe("analyzeImage", () => {
 		} as unknown as ReturnType<typeof streamObject>);
 	});
 
-	it("should proceed for valid image", async () => {
-		mockFileTypeFromBuffer.mockResolvedValue({ext: "png", mime: "image/png"});
-		const result = await analyzeImage(new Uint8Array([1, 2, 3]));
-		expect(mockStreamObject).toHaveBeenCalled();
+	it("should proceed for valid image and pass model to streamObject", async () => {
+		mockFileTypeFromBuffer.mockResolvedValue({ ext: "png", mime: "image/png" });
+		const testModel = { _isTestModel: true } as unknown as LanguageModel;
+		const result = await analyzeImage(new Uint8Array([1, 2, 3]), testModel);
+		expect(mockStreamObject).toHaveBeenCalledWith(
+			expect.objectContaining({
+				model: testModel,
+			}),
+		);
 		expect(result.toTextStreamResponse).toBeDefined();
 	});
 
 	it("should throw for non-image mime", async () => {
-		mockFileTypeFromBuffer.mockResolvedValue({ext: "md", mime: "text/markdown"});
-		await expect(analyzeImage(new Uint8Array([1]))).rejects.toThrow(
+		mockFileTypeFromBuffer.mockResolvedValue({ ext: "md", mime: "text/markdown" });
+		await expect(analyzeImage(new Uint8Array([1]), {} as unknown as LanguageModel)).rejects.toThrow(
 			"Validation failed. Please use image files: jpg, png, webp, gif",
 		);
 	});
 
 	it("should throw for unsupported image extension", async () => {
-		mockFileTypeFromBuffer.mockResolvedValue({ext: "bmp", mime: "image/bmp"});
-		await expect(analyzeImage(new Uint8Array([1]))).rejects.toThrow(
+		mockFileTypeFromBuffer.mockResolvedValue({ ext: "bmp", mime: "image/bmp" });
+		await expect(analyzeImage(new Uint8Array([1]), {} as unknown as LanguageModel)).rejects.toThrow(
 			"Make sure your image is one of the following formats: jpg, png, webp, gif",
 		);
 	});
