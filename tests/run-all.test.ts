@@ -15,6 +15,7 @@ vi.mock("@/lib/getCopyWritings", () => ({
 }));
 
 import {POST} from "../app/api/run-all/route";
+import type {NextRequest} from "next/server";
 import type {ImageAnalysisType} from "../lib/definitions";
 
 /* ------------------------------------------------------------------ */
@@ -123,7 +124,7 @@ describe("POST /api/run-all", () => {
 		const fd = makeFakeFormData(file);
 		const req = makeNextRequest(fd);
 
-		const res = await POST(req as any);
+		const res = await POST(req as unknown as NextRequest);
 		expect(res.ok).toBe(true);
 
 		const events = await readStreamLines(res);
@@ -150,12 +151,12 @@ describe("POST /api/run-all", () => {
 		const fd = makeFakeFormData(file);
 		const req = makeNextRequest(fd);
 
-		const res = await POST(req as any);
+		const res = await POST(req as unknown as NextRequest);
 		const events = await readStreamLines(res);
 
 		const errorEvent = events.find((e) => e.stage === "error");
 		expect(errorEvent).toBeDefined();
-		expect((errorEvent as any).error).toBe("LLM analysis failed");
+		expect((errorEvent as Record<string, unknown>).error).toBe("LLM analysis failed");
 	});
 
 	it("streams error when copy generation rejects", async () => {
@@ -171,23 +172,23 @@ describe("POST /api/run-all", () => {
 		const fd = makeFakeFormData(file);
 		const req = makeNextRequest(fd);
 
-		const res = await POST(req as any);
+		const res = await POST(req as unknown as NextRequest);
 		const events = await readStreamLines(res);
 
 		const errorEvent = events.find((e) => e.stage === "error");
 		expect(errorEvent).toBeDefined();
-		expect((errorEvent as any).error).toBe("LLM copy failed");
+		expect((errorEvent as Record<string, unknown>).error).toBe("LLM copy failed");
 	});
 
 	it("returns 400 when no image file provided", async () => {
 		const fd = new FormData(); // no image
 		const req = makeNextRequest(fd);
 
-		const res = await POST(req as any);
+		const res = await POST(req as unknown as NextRequest);
 		expect(res.status).toBe(400);
 
 		const json = await res.json();
-		expect((json as any).error).toBe("Missing image file");
+		expect((json as Record<string, unknown>).error).toBe("Missing image file");
 	});
 
 	it("withTimeout prevents stream from hanging forever", async () => {
@@ -207,7 +208,7 @@ describe("POST /api/run-all", () => {
 		const req = makeNextRequest(fd);
 
 		// POST returns the Response immediately (stream created, start() running)
-		const res = await POST(req as any);
+		const res = await POST(req as unknown as NextRequest);
 		expect(res.ok).toBe(true);
 		expect(res.body).not.toBeNull();
 
