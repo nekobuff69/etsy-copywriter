@@ -60,6 +60,29 @@ export function encodeConfigHeader(settings: AppSettings): string {
 	return btoa(binary);
 }
 
+/**
+ * Derive a human-readable provider label from a baseURL.
+ * Maps known endpoints to friendly names; falls back to hostname.
+ */
+export function deriveProviderLabel(baseURL: string): string {
+	try {
+		const url = new URL(baseURL);
+		const host = url.hostname;
+
+		// Known provider mappings
+		if (host === "openrouter.ai") return "OpenRouter";
+		if (host === "api.openai.com") return "OpenAI";
+		if (host === "localhost" || host === "127.0.0.1") {
+			return `localhost:${url.port || "443"}`;
+		}
+
+		// Generic fallback: just the hostname
+		return host;
+	} catch {
+		return "unknown";
+	}
+}
+
 export function decodeConfigHeader(header: string): unknown {
 	if (typeof Buffer !== "undefined") {
 		return JSON.parse(Buffer.from(header, "base64").toString("utf-8"));

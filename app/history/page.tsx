@@ -51,9 +51,9 @@ export default function HistoryPage() {
 
 			<div className="space-y-4">
 				{groups.map((group) => {
-					// Create a stable key: use imageHash or a composite for solo groups
+					// Stable unique key: imageHash for groups, session-id for solo entries
 					const groupKey =
-						group.imageHash ?? `solo-${group.sessions[0]?.id}`;
+						group.imageHash ?? `solo-${group.sessions[0]!.id}`;
 
 					return (
 						<HistoryGroupCard

@@ -13,7 +13,6 @@
 	"dependencies": {
 		"@ai-sdk/openai-compatible": "^2.0.13",
 		"@ai-sdk/react": "^3.0.41",
-		"@openrouter/ai-sdk-provider": "^1.5.4",
 		"ai": "^6.0.39",
 		"class-variance-authority": "^0.7.1",
 		"clsx": "^2.1.1",

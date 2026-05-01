@@ -109,6 +109,8 @@ export function groupSessionsByImage(
 	const groups: ImageGroup[] = [];
 
 	for (const [key, groupSessions] of rawGroups) {
+		if (groupSessions.length === 0) continue;
+
 		const imageHash = key.startsWith("solo-") ? null : key;
 		const latestDate = Math.max(...groupSessions.map((s) => s.createdAt));
 		const thumbnail = groupSessions.find((s) => s.thumbnail)?.thumbnail ?? "";

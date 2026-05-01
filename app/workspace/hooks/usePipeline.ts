@@ -3,7 +3,7 @@ import { experimental_useObject as useObject } from "@ai-sdk/react";
 import { imageAnalysisSchema, copyWritingSchema } from "@/lib/schemas";
 import type { ImageAnalysisType, CopyWritingType } from "@/lib/definitions";
 import { saveSession } from "@/lib/history";
-import { getStoredSettings, encodeConfigHeader } from "@/lib/settings";
+import { getStoredSettings, encodeConfigHeader, deriveProviderLabel } from "@/lib/settings";
 
 function llmHeaders(): Record<string, string> {
 	const settings = getStoredSettings();
@@ -53,7 +53,7 @@ export function usePipeline(deps: UsePipelineDeps) {
 				visionModel: settings.vision.model,
 				copyModel: settings.copy.model,
 				baseURL: settings.vision.baseURL,
-				providerLabel: "custom",
+				providerLabel: deriveProviderLabel(settings.vision.baseURL),
 			});
 			onReloadHistory();
 		},

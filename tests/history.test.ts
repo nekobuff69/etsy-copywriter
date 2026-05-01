@@ -264,4 +264,41 @@ describe("history", () => {
 			expect(groups.size).toBe(0);
 		});
 	});
+
+	describe("groupSessionsByImage edge cases", () => {
+		it("should never produce a group with an empty sessions array", () => {
+			let tick = 9000;
+			vi.spyOn(Date, "now").mockImplementation(() => tick++);
+			const s1 = saveSession({ thumbnail: "a", analysis: mockAnalysis, copy: mockCopy, imageHash: "h1" });
+			const s2 = saveSession({ thumbnail: "b", analysis: mockAnalysis, copy: mockCopy, imageHash: "h1" });
+			vi.restoreAllMocks();
+
+			const groups = groupSessionsByImage(getSessions());
+			for (const g of groups) {
+				expect(g.sessions.length).toBeGreaterThan(0);
+			}
+
+			// Also verify each group has a valid latestDate (> 0)
+			for (const g of groups) {
+				expect(g.latestDate).toBeGreaterThan(0);
+			}
+		});
+
+		it("should produce stable keys: imageHash for groups, solo-session for unhashed", () => {
+			let tick = 10000;
+			vi.spyOn(Date, "now").mockImplementation(() => tick++);
+			saveSession({ thumbnail: "x", analysis: mockAnalysis, copy: mockCopy, imageHash: "hashX" });
+			saveSession({ thumbnail: "y", analysis: mockAnalysis, copy: mockCopy }); // solo, no hash
+			vi.restoreAllMocks();
+
+			const groups = groupSessionsByImage(getSessions());
+			const hashedGroup = groups.find((g) => g.imageHash === "hashX");
+			const soloGroup = groups.find((g) => g.imageHash === null);
+
+			expect(hashedGroup).toBeDefined();
+			expect(hashedGroup!.sessions.length).toBe(1);
+			expect(soloGroup).toBeDefined();
+			expect(soloGroup!.sessions.length).toBe(1);
+		});
+	});
 });
