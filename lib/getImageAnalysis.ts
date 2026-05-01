@@ -1,15 +1,11 @@
-import {createOpenRouter} from "@openrouter/ai-sdk-provider";
-import {streamObject} from "ai";
-import {fileTypeFromBuffer} from "file-type";
-import type {FileFormatInfo} from "./definitions";
-import {imageAnalysisSchema} from "./schemas";
+import type { LanguageModel } from "ai";
+import { streamObject } from "ai";
+import { fileTypeFromBuffer } from "file-type";
+import type { FileFormatInfo } from "./definitions";
+import { imageAnalysisSchema } from "./schemas";
 
 globalThis.AI_SDK_LOG_WARNINGS = false;
 
-const openrouter = createOpenRouter({
-	apiKey: process.env.OPENROUTER_API_KEY,
-});
-const visionModel = "qwen/qwen3-vl-8b-instruct";
 const supportedImageFormat: string[] = ["jpg", "png", "webp", "gif"];
 
 export async function validateFormat(
@@ -22,12 +18,15 @@ export async function validateFormat(
 	const fileType = await fileTypeFromBuffer(imageBytes);
 	if (!fileType) throw new Error("File Type Undefined.");
 
-	const {ext: extension, mime} = fileType;
-	return {extension, mime};
+	const { ext: extension, mime } = fileType;
+	return { extension, mime };
 }
 
-export async function analyzeImage(imageBytes: Uint8Array) {
-	const {extension, mime}: FileFormatInfo = await validateFormat(imageBytes);
+export async function analyzeImage(
+	imageBytes: Uint8Array,
+	model: LanguageModel,
+) {
+	const { extension, mime }: FileFormatInfo = await validateFormat(imageBytes);
 
 	if (!mime.startsWith("image/")) {
 		throw new Error(
@@ -43,7 +42,7 @@ export async function analyzeImage(imageBytes: Uint8Array) {
 	const base64Image = `data:${mime};base64,${Buffer.from(imageBytes).toString("base64")}`;
 
 	return streamObject({
-		model: openrouter.chat(visionModel),
+		model,
 		schema: imageAnalysisSchema,
 		messages: [
 			{

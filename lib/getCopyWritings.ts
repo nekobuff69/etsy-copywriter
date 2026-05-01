@@ -1,15 +1,9 @@
-import type {ImageAnalysisType} from "./definitions";
-import {createOpenRouter} from "@openrouter/ai-sdk-provider";
-import {streamObject} from "ai";
-import {copyWritingSchema, imageAnalysisSchema} from "./schemas";
+import type { LanguageModel } from "ai";
+import { streamObject } from "ai";
+import type { ImageAnalysisType } from "./definitions";
+import { copyWritingSchema, imageAnalysisSchema } from "./schemas";
 
 globalThis.AI_SDK_LOG_WARNINGS = false;
-
-const openrouter = createOpenRouter({
-	apiKey: process.env.OPENROUTER_API_KEY,
-});
-
-const copyModel = "qwen/qwen3-vl-30b-a3b-instruct";
 
 export function validateImageAnalysis(analysis: ImageAnalysisType) {
 	if (!analysis) throw new Error("Analysis is empty");
@@ -22,11 +16,14 @@ export function validateImageAnalysis(analysis: ImageAnalysisType) {
 	return validated.data;
 }
 
-export function generateCopy(artworkAnalysis: ImageAnalysisType) {
+export function generateCopy(
+	artworkAnalysis: ImageAnalysisType,
+	model: LanguageModel,
+) {
 	const validArtworkAnalysis = validateImageAnalysis(artworkAnalysis);
 
 	return streamObject({
-		model: openrouter.chat(copyModel),
+		model,
 		schema: copyWritingSchema,
 		messages: [
 			{

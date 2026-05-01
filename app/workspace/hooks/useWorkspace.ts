@@ -1,11 +1,9 @@
-import { useCallback, useEffect, useRef, useState } from "react";
-import { experimental_useObject as useObject } from "@ai-sdk/react";
+"use client";
+
+import { useCallback, useEffect, useState } from "react";
 import { toast } from "sonner";
-import { imageAnalysisSchema, copyWritingSchema } from "@/lib/schemas";
-import type { ImageAnalysisType, CopyWritingType } from "@/lib/definitions";
 import {
 	getSessions,
-	saveSession,
 	deleteSession,
 	clearHistory,
 	type HistorySession,
@@ -16,7 +14,9 @@ import {
 	isHistoryMode,
 	type SessionView,
 } from "@/lib/session";
-import { createThumbnail } from "@/lib/file-utils";
+import type { ImageAnalysisType, CopyWritingType } from "@/lib/definitions";
+import { useUpload } from "./useUpload";
+import { usePipeline } from "./usePipeline";
 
 export interface UploadGroup {
 	file: File | null;
@@ -77,6 +77,31 @@ export interface GlobalGroup {
 	stop: () => void;
 }
 
+/**
+ * Reads `?session=<id>` from the URL, loads the session from localStorage,
+ * and returns it. After reading, the query param is replaced away so refresh
+ * doesn't re-trigger restoration.
+ */
+function useSessionRestoration(
+	onRestore: (session: HistorySession) => void,
+) {
+	useEffect(() => {
+		if (typeof window === "undefined") return;
+		const params = new URLSearchParams(window.location.search);
+		const sessionId = params.get("session");
+		if (!sessionId) return;
+
+		const sessions = getSessions();
+		const session = sessions.find((s) => s.id === sessionId);
+		if (session) {
+			onRestore(session);
+		}
+
+		// Remove query param without reload
+		window.history.replaceState({}, "", "/workspace");
+	}, [onRestore]);
+}
+
 export function useWorkspace(): {
 	upload: UploadGroup;
 	analysis: AnalysisGroup;
@@ -84,239 +109,99 @@ export function useWorkspace(): {
 	history: HistoryGroup;
 	global: GlobalGroup;
 } {
-	const [file, setFile] = useState<File | null>(null);
-	const [previewUrl, setPreviewUrl] = useState<string | null>(null);
-	const [thumbnailUrl, setThumbnailUrl] = useState<string | null>(null);
-	const [analysis, setAnalysis] = useState<Partial<ImageAnalysisType> | null>(
-		null,
-	);
-	const [copy, setCopy] = useState<Partial<CopyWritingType> | null>(null);
 	const [stage, setStage] = useState<
 		"idle" | "analyzing" | "generating" | "done" | "error"
 	>("idle");
 	const [error, setError] = useState<string | null>(null);
-	const [history, setHistory] = useState<HistorySession[]>([]);
 	const [historyOpen, setHistoryOpen] = useState(false);
 	const [sessionView, setSessionView] = useState<SessionView>(newSessionView());
 
-	const fileInputRef = useRef<HTMLInputElement>(null);
-	const formDataRef = useRef<FormData | null>(null);
-	const abortRef = useRef<AbortController | null>(null);
-
 	const isHistory = isHistoryMode(sessionView);
 
-	const loadHistory = useCallback(() => {
-		setHistory(getSessions());
-	}, []);
+	const [history, setHistory] = useState<HistorySession[]>(() => getSessions());
 
-	useEffect(() => {
-		loadHistory();
-	}, [loadHistory]);
+	const loadHistory = useCallback(() => setHistory(getSessions()), []);
 
-	useEffect(() => {
-		if (!file) {
-			setPreviewUrl(null);
-			setThumbnailUrl(null);
-			return;
-		}
-		const url = URL.createObjectURL(file);
-		setPreviewUrl(url);
-		createThumbnail(file).then(setThumbnailUrl);
-		return () => URL.revokeObjectURL(url);
-	}, [file]);
+	// Upload state
+	const uploadState = useUpload();
 
-	const {
-		object: streamedAnalysis,
-		submit: submitAnalysis,
-		isLoading: analysisLoading,
-		stop: stopAnalysis,
-	} = useObject({
-		api: "/api/analyze-image",
-		schema: imageAnalysisSchema,
-		fetch: async (url) => {
-			if (!formDataRef.current) throw new Error("No image file selected");
-			return fetch(url, { method: "POST", body: formDataRef.current });
-		},
-		onFinish: ({ object }) => {
-			if (object) {
-				setAnalysis(object);
-				setStage("done");
-			}
-		},
-		onError: (err) => {
-			setError(err.message);
-			setStage("error");
-		},
-	});
-
-	const {
-		object: streamedCopy,
-		submit: submitCopy,
-		isLoading: copyLoading,
-		stop: stopCopy,
-	} = useObject({
-		api: "/api/generate-copy",
-		schema: copyWritingSchema,
-		onFinish: ({ object }) => {
-			if (object) {
-				setCopy(object);
-				setStage("done");
-				if (analysis && thumbnailUrl) {
-					saveSession({
-						thumbnail: thumbnailUrl,
-						analysis: analysis as ImageAnalysisType,
-						copy: object,
-					});
-					loadHistory();
-				}
-			}
-		},
-		onError: (err) => {
-			setError(err.message);
-			setStage("error");
-		},
-	});
-
-	const isLoading =
-		analysisLoading ||
-		copyLoading ||
-		stage === "analyzing" ||
-		stage === "generating";
-
+	// When file changes in history mode, switch back to current session
+	const rawHandleFile = uploadState.handleFile;
 	const handleFile = useCallback(
 		(f: File | null) => {
-			setFile(f);
-			setError(null);
-			if (f && isHistory) {
+			rawHandleFile(f);
+			if (f && isHistoryMode(sessionView)) {
 				setSessionView(newSessionView());
 			}
 		},
-		[isHistory],
+		[rawHandleFile, sessionView],
 	);
 
-	const onDrop = useCallback(
-		(e: React.DragEvent) => {
-			e.preventDefault();
-			const dropped = e.dataTransfer.files[0];
-			if (dropped) handleFile(dropped);
-		},
-		[handleFile],
+	// Analysis/copy editing state (client-side edits)
+	const [editedAnalysis, setEditedAnalysis] =
+		useState<Partial<ImageAnalysisType> | null>(null);
+	const [editedCopy, setEditedCopy] = useState<Partial<CopyWritingType> | null>(
+		null,
 	);
 
-	const onFileInput = useCallback(
-		(e: React.ChangeEvent<HTMLInputElement>) => {
-			handleFile(e.target.files?.[0] ?? null);
-		},
-		[handleFile],
-	);
-
-	const startAnalysis = useCallback(() => {
-		if (!file) return;
-		const fd = new FormData();
-		fd.append("image", file);
-		formDataRef.current = fd;
-		setStage("analyzing");
+	const onAnalysisFinish = useCallback((analysis: ImageAnalysisType) => {
+		setEditedAnalysis(analysis);
+		setStage("done");
 		setError(null);
-		setAnalysis(null);
-		setCopy(null);
-		submitAnalysis({});
-	}, [file, submitAnalysis]);
+	}, []);
 
-	const startCopy = useCallback(
-		(data?: ImageAnalysisType) => {
-			const payload = data ?? (analysis as ImageAnalysisType | undefined);
-			if (!payload) return;
-			setStage("generating");
+	const onCopyFinish = useCallback((copyData: CopyWritingType) => {
+		setEditedCopy(copyData);
+		setStage("done");
+		setError(null);
+	}, []);
+
+	const onError = useCallback((message: string) => {
+		setError(message);
+		setStage("error");
+	}, []);
+
+	const onStateChange = useCallback(
+		(s: "idle" | "analyzing" | "generating" | "done" | "error") => {
+			setStage(s);
+			if (s !== "error") setError(null);
+		},
+		[],
+	);
+
+	// Pipeline state
+	const pipeline = usePipeline({
+		thumbnailUrl: uploadState.thumbnailUrl,
+		imageHash: uploadState.imageHash,
+		onAnalysisFinish,
+		onCopyFinish,
+		onError,
+		onStateChange,
+		onReloadHistory: loadHistory,
+	});
+
+	// Session restoration from ?session= query param
+	const restoreSession = useCallback(
+		(session: HistorySession) => {
+			setEditedAnalysis(session.analysis);
+			setEditedCopy(session.copy);
+			uploadState.handleFile(null);
+			setStage("done");
 			setError(null);
-			setCopy(null);
-			submitCopy(payload);
+			setSessionView(viewHistory(session.id));
 		},
-		[analysis, submitCopy],
+		[uploadState],
 	);
 
-	const runAll = useCallback(async () => {
-		if (!file) return;
-		setStage("analyzing");
-		setError(null);
-		setAnalysis(null);
-		setCopy(null);
+	useSessionRestoration(restoreSession);
 
-		const fd = new FormData();
-		fd.append("image", file);
-		abortRef.current = new AbortController();
+	const isLoading =
+		pipeline.analysisLoading ||
+		pipeline.copyLoading ||
+		stage === "analyzing" ||
+		stage === "generating";
 
-		try {
-			const res = await fetch("/api/run-all", {
-				method: "POST",
-				body: fd,
-				signal: abortRef.current.signal,
-			});
-			if (!res.ok) {
-				const data = await res.json().catch(() => ({}));
-				throw new Error(data.error || "Run-all failed");
-			}
-
-			const reader = res.body?.getReader();
-			if (!reader) throw new Error("No response body");
-
-			const decoder = new TextDecoder();
-			let buffer = "";
-
-			while (true) {
-				const { done, value } = await reader.read();
-				if (done) break;
-				buffer += decoder.decode(value, { stream: true });
-				const lines = buffer.split("\n");
-				buffer = lines.pop() || "";
-				for (const line of lines) {
-					if (!line.trim()) continue;
-					const event = JSON.parse(line);
-					setStage(event.stage);
-					if (event.stage === "done") {
-						setAnalysis(event.analysis);
-						setCopy(event.copy);
-						if (thumbnailUrl) {
-							saveSession({
-								thumbnail: thumbnailUrl,
-								analysis: event.analysis,
-								copy: event.copy,
-							});
-							loadHistory();
-						}
-					}
-					if (event.stage === "error") {
-						throw new Error(event.error);
-					}
-				}
-			}
-		} catch (err: unknown) {
-			if (err instanceof Error && err.name !== "AbortError") {
-				setError(err.message);
-				setStage("error");
-			}
-		}
-	}, [file, thumbnailUrl, loadHistory]);
-
-	const stop = useCallback(() => {
-		stopAnalysis();
-		stopCopy();
-		if (abortRef.current) {
-			abortRef.current.abort();
-			abortRef.current = null;
-		}
-		setStage("idle");
-	}, [stopAnalysis, stopCopy]);
-
-	const stopZoneAnalysis = useCallback(() => {
-		stopAnalysis();
-		setStage((prev) => (prev === "analyzing" ? "idle" : prev));
-	}, [stopAnalysis]);
-
-	const stopZoneCopy = useCallback(() => {
-		stopCopy();
-		setStage((prev) => (prev === "generating" ? "done" : prev));
-	}, [stopCopy]);
-
+	// Clipboard helpers
 	const copyText = useCallback(async (text: string) => {
 		try {
 			await navigator.clipboard.writeText(text);
@@ -327,35 +212,21 @@ export function useWorkspace(): {
 	}, []);
 
 	const copyAll = useCallback(() => {
-		if (!copy) return;
-		const text = `Title 1: ${copy.titles?.option1 ?? ""}\nTitle 2: ${copy.titles?.option2 ?? ""}\nTitle 3: ${copy.titles?.option3 ?? ""}\n\nTags: ${(copy.tags ?? []).join(", ")}\n\nDescription:\n${copy.description ?? ""}`;
+		const c = pipeline.displayCopy ?? editedCopy;
+		if (!c) return;
+		const text = `Title 1: ${c.titles?.option1 ?? ""}\nTitle 2: ${c.titles?.option2 ?? ""}\nTitle 3: ${c.titles?.option3 ?? ""}\n\nTags: ${(c.tags ?? []).join(", ")}\n\nDescription:\n${c.description ?? ""}`;
 		copyText(text);
-	}, [copy, copyText]);
+	}, [pipeline.displayCopy, editedCopy, copyText]);
 
-	const restoreSession = useCallback((session: HistorySession) => {
-		setAnalysis(session.analysis);
-		setCopy(session.copy);
-		setPreviewUrl(session.thumbnail);
-		setThumbnailUrl(null);
-		setFile(null);
-		setStage("done");
-		setError(null);
-		setSessionView(viewHistory(session.id));
-	}, []);
-
+	// History actions
 	const startNewSession = useCallback(() => {
-		setFile(null);
-		setPreviewUrl(null);
-		setThumbnailUrl(null);
-		setAnalysis(null);
-		setCopy(null);
+		uploadState.handleFile(null);
+		setEditedAnalysis(null);
+		setEditedCopy(null);
 		setStage("idle");
 		setError(null);
 		setSessionView(newSessionView());
-		if (fileInputRef.current) {
-			fileInputRef.current.value = "";
-		}
-	}, []);
+	}, [uploadState]);
 
 	const handleDeleteSession = useCallback(
 		(id: string) => {
@@ -371,18 +242,19 @@ export function useWorkspace(): {
 	const handleClearHistory = useCallback(() => {
 		clearHistory();
 		loadHistory();
-		if (isHistory) {
+		if (isHistoryMode(sessionView)) {
 			startNewSession();
 		}
-	}, [loadHistory, isHistory, startNewSession]);
+	}, [loadHistory, sessionView, startNewSession]);
 
+	// Field editors
 	const updateAnalysisField = useCallback(
 		<K extends keyof ImageAnalysisType>(
 			section: K,
 			field: keyof ImageAnalysisType[K],
 			value: unknown,
 		) => {
-			setAnalysis((prev) => {
+			setEditedAnalysis((prev) => {
 				if (!prev) return prev;
 				return {
 					...prev,
@@ -398,46 +270,45 @@ export function useWorkspace(): {
 
 	const updateCopyField = useCallback(
 		<K extends keyof CopyWritingType>(field: K, value: CopyWritingType[K]) => {
-			setCopy((prev) => (prev ? { ...prev, [field]: value } : prev));
+			setEditedCopy((prev) => (prev ? { ...prev, [field]: value } : prev));
 		},
 		[],
 	);
 
-	const displayAnalysis =
-		(streamedAnalysis as Partial<ImageAnalysisType> | undefined) ?? analysis;
-	const displayCopy =
-		(streamedCopy as Partial<CopyWritingType> | undefined) ?? copy;
+	// Merge pipeline display with manual edits
+	const displayAnalysis = pipeline.displayAnalysis ?? editedAnalysis;
+	const displayCopy = pipeline.displayCopy ?? editedCopy;
 
 	return {
 		upload: {
-			file,
-			previewUrl,
-			thumbnailUrl,
+			file: uploadState.file,
+			previewUrl: uploadState.previewUrl,
+			thumbnailUrl: uploadState.thumbnailUrl,
 			handleFile,
-			onDrop,
-			onFileInput,
-			startAnalysis,
-			runAll,
-			stop,
-			fileInputRef,
+			onDrop: uploadState.onDrop,
+			onFileInput: uploadState.onFileInput,
+			startAnalysis: () => pipeline.startAnalysis(uploadState.file),
+			runAll: () => pipeline.runAll(uploadState.file),
+			stop: pipeline.stop,
+			fileInputRef: uploadState.fileInputRef,
 		},
 		analysis: {
 			displayAnalysis,
 			updateAnalysisField,
-			startCopy,
-			startAnalysis,
-			stopZoneAnalysis,
-			analysisLoading,
-			copyLoading,
+			startCopy: pipeline.startCopy,
+			startAnalysis: () => pipeline.startAnalysis(uploadState.file),
+			stopZoneAnalysis: pipeline.stopZoneAnalysis,
+			analysisLoading: pipeline.analysisLoading,
+			copyLoading: pipeline.copyLoading,
 		},
 		copy: {
 			displayCopy,
 			updateCopyField,
-			startCopy,
+			startCopy: pipeline.startCopy,
 			copyAll,
 			copyText,
-			stopZoneCopy,
-			copyLoading,
+			stopZoneCopy: pipeline.stopZoneCopy,
+			copyLoading: pipeline.copyLoading,
 		},
 		history: {
 			history,
@@ -454,7 +325,7 @@ export function useWorkspace(): {
 			error,
 			isLoading,
 			isHistory,
-			stop,
+			stop: pipeline.stop,
 		},
 	};
 }
