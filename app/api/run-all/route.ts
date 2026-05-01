@@ -2,6 +2,15 @@ import {analyzeImage} from "@/lib/getImageAnalysis";
 import {generateCopy} from "@/lib/getCopyWritings";
 import {NextRequest} from "next/server";
 
+const LLM_TIMEOUT_MS = 120_000; // 2 minutes per LLM call
+
+function withTimeout<T>(promise: Promise<T>, ms: number, label: string): Promise<T> {
+  const timeout = new Promise<never>((_, reject) => {
+    setTimeout(() => reject(new Error(`${label} timed out after ${ms / 1000}s`)), ms);
+  });
+  return Promise.race([promise, timeout]);
+}
+
 export async function POST(req: NextRequest) {
 	try {
 		const formData = await req.formData();
@@ -26,17 +35,29 @@ export async function POST(req: NextRequest) {
 				try {
 					send({stage: "analyzing"});
 					const analysisResult = await analyzeImage(bytes);
-					const analysis = await analysisResult.object;
+					const analysis = await withTimeout(
+						analysisResult.object,
+						LLM_TIMEOUT_MS,
+						"Image analysis",
+					);
 
 					send({stage: "generating"});
 					const copyResult = generateCopy(analysis);
-					const copy = await copyResult.object;
+					const copy = await withTimeout(
+						copyResult.object,
+						LLM_TIMEOUT_MS,
+						"Copy generation",
+					);
 
 					send({stage: "done", analysis, copy});
 					controller.close();
 				} catch (err: unknown) {
 					const message = err instanceof Error ? err.message : "Unknown error";
-					send({stage: "error", error: message});
+					try {
+						send({stage: "error", error: message});
+					} catch {
+						// stream already closed — swallow
+					}
 					controller.close();
 				}
 			},
