@@ -51,7 +51,9 @@ export function saveSession(params: {
 }): HistorySession {
 	const sessions = readSessions();
 	const session: HistorySession = {
-		id: String(Date.now()),
+		id: typeof crypto !== 'undefined' && crypto.randomUUID
+			? crypto.randomUUID()
+			: `${Date.now()}-${Math.random().toString(36).slice(2, 9)}`,
 		thumbnail: params.thumbnail,
 		analysis: params.analysis,
 		copy: params.copy,
