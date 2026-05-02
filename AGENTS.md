@@ -57,7 +57,8 @@
 ### History Manager (`lib/history.ts`)
 - localStorage-based session storage with LRU eviction at max 20 sessions
 - Interface: `getSessions`, `getSession`, `saveSession`, `deleteSession`, `clearHistory`
-- Each session stores: `id` (timestamp), `thumbnail` (JPEG data URL), `analysis`, `copy`, `createdAt`
+- Each session stores: `id` (`crypto.randomUUID()`, fallback `${Date.now()}-${Math.random()}`), `thumbnail` (JPEG data URL), `analysis`, `copy`, `createdAt`
+- Sessions are grouped by `imageHash` on the History page (`app/history/`) into expandable `ImageGroup` cards
 - Thumbnails are compressed via `createThumbnail` before storage to avoid `QuotaExceededError`
 
 ## Critical Gotchas
