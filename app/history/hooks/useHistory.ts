@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import {
@@ -18,11 +18,13 @@ import {
 export function useHistory() {
 	const router = useRouter();
 
-	const [groups, setGroups] = useState<ImageGroup[]>(() =>
-		groupSessionsByImage(getSessions()),
-	);
+	const [groups, setGroups] = useState<ImageGroup[]>([]);
 	const [expandedGroupHash, setExpandedGroupHash] = useState<string | null>(null);
 	const [expandedSessionId, setExpandedSessionId] = useState<string | null>(null);
+
+	useEffect(() => {
+		setGroups(groupSessionsByImage(getSessions()));
+	}, []);
 
 	const reloadGroups = useCallback(() => {
 		setGroups(groupSessionsByImage(getSessions()));

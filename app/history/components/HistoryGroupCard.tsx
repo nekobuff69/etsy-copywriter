@@ -73,9 +73,9 @@ export function HistoryGroupCard({
 
 			{isExpanded && (
 				<div className="border-t">
-					{sessions.map((session) => (
+					{sessions.map((session, index) => (
 						<HistorySessionRow
-							key={session.id}
+							key={`${session.id}-${index}`}
 							session={session}
 							isExpanded={expandedSessionId === session.id}
 							onToggle={() => onToggleSession(session.id)}
