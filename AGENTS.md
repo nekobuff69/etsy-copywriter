@@ -5,7 +5,7 @@
 - `pnpm dev` — Next.js dev server on `http://localhost:3000`
 - `pnpm build` — production build
 - `pnpm lint` — ESLint (Next.js flat config)
-- `pnpm test` — Vitest (`tests/getImageAnalysis.test.ts`, `tests/history.test.ts`, `tests/session.test.ts`, `tests/file-utils.test.ts`)
+- `pnpm test` — Vitest (`tests/getImageAnalysis.test.ts`, `tests/history.test.ts`, `tests/session.test.ts`, `tests/file-utils.test.ts`, `tests/getCopyWritings.test.ts`, `tests/file-hash.test.ts`, `tests/settings.test.ts`, `tests/api-settings.test.ts`, `tests/llm-provider.test.ts`)
 
 ## Environment
 - Requires `OPENROUTER_API_KEY` in `.env`
@@ -29,7 +29,7 @@
 ### API Routes (`app/api/`)
 - **`/api/analyze-image`** — POST FormData with `image` file → `streamObject` → `toTextStreamResponse()`
 - **`/api/generate-copy`** — POST analysis JSON → `streamObject` → `toTextStreamResponse()`
-- **`/api/run-all`** — POST FormData with `image` file → sequential chain (analysis → copy) → NDJSON progress stream
+- **No `/api/run-all` endpoint** — the "Run All" feature is orchestrated client-side by `usePipeline.runAll()`, which calls the two working endpoints sequentially (see ADR 007)
 
 ### Pipelines (`lib/`)
 - **Image Analysis** (`lib/getImageAnalysis.ts`): `validateFormat(Uint8Array)` → `fileTypeFromBuffer` → base64 encode → `streamObject` with vision model → returns `StreamObjectResult`
@@ -42,7 +42,8 @@
 - Uses `experimental_useObject` (aliased as `useObject`) from `@ai-sdk/react`
 - Two hook instances: one for `/api/analyze-image`, one for `/api/generate-copy`
 - Both `onFinish` callbacks check the `error` property (TypeValidationError) — if the model returns JSON that doesn't match the schema, the error is surfaced to the user
-- `run-all` uses manual `fetch` + `ReadableStream` reader with NDJSON lines
+- **Run All** (`usePipeline.runAll()`) orchestrates the two endpoints sequentially on the client: `submitAnalysis` → await `onFinish` promise → `submitCopy` → await `onFinish` promise → save session
+- Promise-based orchestration uses `useRef` resolver/rejector pairs (`analysisResolveRef`, `copyResolveRef`) that the `onFinish`/`onError` callbacks invoke
 
 ### Session Manager (`lib/session.ts`)
 - Session mode state machine: `newSessionView()`, `viewHistory(id)`, `isHistoryMode()`
@@ -69,7 +70,9 @@ Original `lib/getImageAnalysis.ts` and `lib/getCopyWritings.ts` had top-level in
 
 **Resolution**: Keep `streamObject` (deprecated but functional) with `toTextStreamResponse()`. To force schema-compliant JSON, we embed the full schema structure in the system prompt and pass `schemaName`/`schemaDescription`. This makes Qwen output the correct nested JSON shape.
 
-`streamObject` client-side: `useObject` `onFinish` callbacks check `{ object, error }` — if `error` is a `TypeValidationError`, it's surfaced to the user via the error alert.
+**Critical**: `streamObject().object` (the server-side promise) never resolves with Qwen/OpenRouter because the provider ignores `response_format: json_schema`. The `toTextStreamResponse()` path works fine — it streams the raw JSON text and `useObject` parses it client-side. This is why `/api/run-all` was removed (see ADR 007) and Run All is now orchestrated client-side.
+
+`useObject` `onFinish` callbacks check `{ object, error }` — if `error` is a `TypeValidationError`, it's surfaced to the user via the error alert.
 
 ### FormData + useObject
 `useObject` does not natively support FormData. The analyze-image hook provides a custom `fetch` function that reads `formDataRef.current` and sends it via `fetch(url, {method: "POST", body: formDataRef.current})`.

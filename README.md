@@ -14,7 +14,7 @@ AI-powered Etsy listing copywriter for artwork sellers. Upload an image, review/
    - 3 title options
    - 5–8 SEO tags (ranked by relevance)
    - Compelling product description
-4. **Run All** — One-click sequential pipeline (analyze → generate copy) with NDJSON progress streaming.
+4. **Run All** — One-click sequential pipeline (analyze → generate copy), orchestrated client-side via the two working streaming endpoints.
 5. **History** — Sessions auto-saved to localStorage (max 20, LRU eviction) with compressed thumbnails and timestamps. History sessions are read-only.
 6. **Settings** — Per-session model selection (model, base URL, API key) with localStorage persistence.
 
@@ -58,7 +58,7 @@ app/
   workspace/
     page.tsx                           # Layout shell wiring useWorkspace to zone components
     hooks/useWorkspace.ts              # Orchestrator: state, AI hooks, file lifecycle, history
-    hooks/usePipeline.ts               # AI streaming: analyze, copy, runAll, stop, save
+    hooks/usePipeline.ts               # AI streaming: analyze, copy, runAll (client-side orchestration), stop, save
     hooks/useUpload.ts                 # File selection, preview, thumbnail generation
     components/UploadZone.tsx          # File drop, preview, Analyze / Run All / Stop buttons
     components/AnalysisZone.tsx        # Editable 4-section analysis form + Generate Copy / Stop
@@ -76,7 +76,6 @@ app/
   api/
     analyze-image/route.ts             # POST FormData → streamObject → text stream
     generate-copy/route.ts             # POST analysis JSON → streamObject → text stream
-    run-all/route.ts                   # Sequential chain with NDJSON progress
     health-check/route.ts              # Health check endpoint
 components/
   ui/                                  # shadcn components (button, card, textarea, etc.)
@@ -122,11 +121,14 @@ See [`docs/adr/`](docs/adr/):
 - **ADR 001:** API Routes over Server Actions — route handlers give standard HTTP streaming that `useObject` consumes natively.
 - **ADR 002:** `streamObject` + `experimental_useObject` — deprecated in ai v6 but still the only path for progressive structured-object streaming with current React hooks.
 - **ADR 003:** FormData multipart for images — avoids base64 bloat in requests, native browser support, aligns with `Uint8Array`-accepting pipelines.
+- **ADR 007:** Client-side Run All orchestration — `/api/run-all` removed because `streamObject().object` never resolves with Qwen/OpenRouter; Run All now calls the two working endpoints sequentially from the client.
 
 ## Important Notes
 
 ### `streamObject` schema enforcement
 `streamObject` in ai v6 is deprecated and does not enforce the Zod schema on models that lack native structured output support (e.g., Qwen via OpenRouter). To force the correct JSON shape, both pipeline modules embed the full schema structure in the system prompt and pass `schemaName` / `schemaDescription`. Without this, the model returns flat JSON like `{"description":"..."}` instead of the required nested structure.
+
+**Important**: `streamObject().object` (the server-side `.object` promise) never resolves with Qwen/OpenRouter because the provider silently ignores `response_format: json_schema`. The `toTextStreamResponse()` path works fine — it streams raw JSON text that `useObject` progressively parses on the client. This is why the `/api/run-all` server-side endpoint was removed and Run All is now orchestrated client-side.
 
 ### Client-side error handling
 Both `useObject` `onFinish` callbacks check the `error` property. If the model's output fails Zod validation (TypeValidationError), the error is surfaced to the user via a destructive alert banner instead of silently showing empty fields.

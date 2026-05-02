@@ -24,6 +24,12 @@ interface UsePipelineDeps {
 
 /**
  * usePipeline — owns streaming analysis/copy, runAll, loading states, saveSession.
+ *
+ * runAll orchestrates the two existing working endpoints sequentially:
+ *   POST /api/analyze-image  →  await stream  →  POST /api/generate-copy  →  await stream
+ * This avoids the broken server-side /api/run-all endpoint which used
+ * streamObject().object — that never resolves with Qwen/OpenRouter because
+ * the provider doesn't support response_format: json_schema.
  */
 export function usePipeline(deps: UsePipelineDeps) {
 	const {
@@ -39,7 +45,12 @@ export function usePipeline(deps: UsePipelineDeps) {
 	const [analysis, setAnalysis] = useState<Partial<ImageAnalysisType> | null>(null);
 	const [copy, setCopy] = useState<Partial<CopyWritingType> | null>(null);
 	const formDataRef = useRef<FormData | null>(null);
-	const abortRef = useRef<AbortController | null>(null);
+
+	// Promise resolvers for runAll orchestration
+	const analysisResolveRef = useRef<((value: ImageAnalysisType) => void) | null>(null);
+	const analysisRejectRef = useRef<((error: Error) => void) | null>(null);
+	const copyResolveRef = useRef<((value: CopyWritingType) => void) | null>(null);
+	const copyRejectRef = useRef<((error: Error) => void) | null>(null);
 
 	const handleSaveSession = useCallback(
 		(analysisData: ImageAnalysisType, copyData: CopyWritingType) => {
@@ -81,16 +92,25 @@ export function usePipeline(deps: UsePipelineDeps) {
 		onFinish: ({ object, error }) => {
 			if (error) {
 				onError(`Analysis failed: ${error.message}`);
+				analysisRejectRef.current?.(error);
+				analysisResolveRef.current = null;
+				analysisRejectRef.current = null;
 				return;
 			}
 			if (object) {
 				setAnalysis(object);
 				onAnalysisFinish(object);
+				analysisResolveRef.current?.(object);
+				analysisResolveRef.current = null;
+				analysisRejectRef.current = null;
 			}
 		},
 		onError: (err) => {
 			const msg = err?.message ?? String(err);
 			onError(msg);
+			analysisRejectRef.current?.(err instanceof Error ? err : new Error(msg));
+			analysisResolveRef.current = null;
+			analysisRejectRef.current = null;
 		},
 	});
 
@@ -107,6 +127,9 @@ export function usePipeline(deps: UsePipelineDeps) {
 		onFinish: ({ object, error }) => {
 			if (error) {
 				onError(`Copy generation failed: ${error.message}`);
+				copyRejectRef.current?.(error);
+				copyResolveRef.current = null;
+				copyRejectRef.current = null;
 				return;
 			}
 			if (object) {
@@ -115,11 +138,17 @@ export function usePipeline(deps: UsePipelineDeps) {
 				if (analysis) {
 					handleSaveSession(analysis as ImageAnalysisType, object);
 				}
+				copyResolveRef.current?.(object);
+				copyResolveRef.current = null;
+				copyRejectRef.current = null;
 			}
 		},
 		onError: (err) => {
 			const msg = err?.message ?? String(err);
 			onError(msg);
+			copyRejectRef.current?.(err instanceof Error ? err : new Error(msg));
+			copyResolveRef.current = null;
+			copyRejectRef.current = null;
 		},
 	});
 
@@ -154,79 +183,79 @@ export function usePipeline(deps: UsePipelineDeps) {
 		[analysis, onStateChange, submitCopy],
 	);
 
+	/**
+	 * runAll — sequential client-side orchestration of analysis → copy.
+	 * Uses the existing working useObject hooks instead of the broken
+	 * server-side /api/run-all endpoint.
+	 */
 	const runAll = useCallback(
 		async (file: File | null) => {
 			if (!file) return;
+
+			// Step 1: Analyze image
 			onStateChange("analyzing");
 			setAnalysis(null);
 			setCopy(null);
 
+			const analysisPromise = new Promise<ImageAnalysisType>((resolve, reject) => {
+				analysisResolveRef.current = resolve;
+				analysisRejectRef.current = reject;
+			});
+
 			const fd = new FormData();
 			fd.append("image", file);
-			abortRef.current = new AbortController();
+			formDataRef.current = fd;
+			submitAnalysis({});
 
+			let analysisResult: ImageAnalysisType;
 			try {
-				const res = await fetch("/api/run-all", {
-					method: "POST",
-					body: fd,
-					headers: llmHeaders(),
-					signal: abortRef.current.signal,
-				});
-				if (!res.ok) {
-					const data = await res.json().catch(() => ({}));
-					throw new Error(data.error || "Run-all failed");
-				}
-
-				const reader = res.body?.getReader();
-				if (!reader) throw new Error("No response body");
-
-				const decoder = new TextDecoder();
-				let buffer = "";
-
-				while (true) {
-					const { done, value } = await reader.read();
-					if (done) break;
-					buffer += decoder.decode(value, { stream: true });
-					const lines = buffer.split("\n");
-					buffer = lines.pop() || "";
-					for (const line of lines) {
-						if (!line.trim()) continue;
-						const event = JSON.parse(line);
-						onStateChange(event.stage);
-						if (event.stage === "done") {
-							setAnalysis(event.analysis);
-							setCopy(event.copy);
-							handleSaveSession(event.analysis, event.copy);
-						}
-						if (event.stage === "error") {
-							throw new Error(event.error);
-						}
-					}
-				}
-			} catch (err: unknown) {
-				if (err instanceof Error && err.name !== "AbortError") {
-					onError(err.message);
-				}
+				analysisResult = await analysisPromise;
+			} catch {
+				// Error already surfaced via onError callback
+				return;
 			}
+
+			// Step 2: Generate copy
+			onStateChange("generating");
+			setCopy(null);
+
+			const copyPromise = new Promise<CopyWritingType>((resolve, reject) => {
+				copyResolveRef.current = resolve;
+				copyRejectRef.current = reject;
+			});
+
+			submitCopy(analysisResult);
+
+			let copyResult: CopyWritingType;
+			try {
+				copyResult = await copyPromise;
+			} catch {
+				// Error already surfaced via onError callback
+				return;
+			}
+
+			// Guarantee session save (copy onFinish may also save, which is idempotent)
+			handleSaveSession(analysisResult, copyResult);
 		},
-		[onStateChange, handleSaveSession, onError],
+		[onStateChange, submitAnalysis, submitCopy, handleSaveSession],
 	);
 
 	const stop = useCallback(() => {
 		stopAnalysis();
 		stopCopy();
-		if (abortRef.current) {
-			abortRef.current.abort();
-			abortRef.current = null;
-		}
+		// Reject any pending runAll promises so the async function returns
+		analysisRejectRef.current?.(new Error("Stopped by user"));
+		copyRejectRef.current?.(new Error("Stopped by user"));
 	}, [stopAnalysis, stopCopy]);
 
 	const stopZoneAnalysis = useCallback(() => {
 		stopAnalysis();
+		analysisRejectRef.current?.(new Error("Stopped by user"));
 	}, [stopAnalysis]);
 
 	const stopZoneCopy = useCallback(() => {
 		stopCopy();
+		copyRejectRef.current?.(new Error("Stopped by user"));
 	}, [stopCopy]);
 
 	const displayAnalysis =

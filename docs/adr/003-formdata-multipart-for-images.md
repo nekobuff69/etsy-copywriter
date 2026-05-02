@@ -21,4 +21,4 @@ Use FormData multipart for the upload API.
 **Consequences:**
 - Client must construct `FormData` and append the file.
 - `useObject` does not natively support FormData; we provide a custom `fetch` function.
-- For `/api/run-all`, we also use FormData and parse it manually in the route handler.
+- The "Run All" feature now orchestrates the two endpoints client-side (no separate `/api/run-all` route) — see ADR 007. The first step still uses FormData for `/api/analyze-image`.

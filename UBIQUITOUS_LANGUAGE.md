@@ -16,7 +16,7 @@
 | **Analysis**  | Structured data describing an artwork (subject, style, colors, etc.)            | Description, metadata   |
 | **Copy**      | Etsy listing content: titles, tags, and description                             | Content, text, output   |
 | **Session**   | One complete run through the pipeline, saved to History                         | Entry, run, generation  |
-| **Run All**   | The action that runs the full pipeline (analysis + copy) in one sequence        | Full run, auto-generate |
+| **Run All**   | The client-side action that runs the full pipeline (analysis → copy) by sequentially calling `/api/analyze-image` then `/api/generate-copy` | Full run, auto-generate |
 | **Streaming** | Progressive delivery of LLM output as partial objects                           | Live update, real-time  |
 
 ## LLM Infrastructure

@@ -7,7 +7,7 @@ The app originally used hardcoded OpenRouter models with the API key stored only
 
 We evaluated:
 1. Query parameters — visible in URLs and server logs, leaks API keys.
-2. Request body — works for JSON endpoints but awkward for FormData multipart uploads (`/api/analyze-image`, `/api/run-all`).
+2. Request body — works for JSON endpoints but not supported by `useObject` for FormData multipart uploads.
 3. Custom HTTP header — uniform across JSON and FormData requests, not logged by default, easily parsed server-side.
 4. Server-side session store — stateful, requires session management infrastructure, overkill for a single-user local app.
 
@@ -15,7 +15,7 @@ We evaluated:
 Pass LLM configuration via a custom HTTP header `X-LLM-Config` on every API request.
 
 **Rationale:**
-- The header works uniformly across all request types: JSON bodies (`/api/generate-copy`, `/api/health-check`) and FormData multipart (`/api/analyze-image`, `/api/run-all`).
+- The header works uniformly across all request types: JSON bodies (`/api/generate-copy`, `/api/health-check`) and FormData multipart (`/api/analyze-image`). The "Run All" feature calls both endpoints sequentially from the client, so both header types are used in one user flow.
 - Base64-encoded JSON in a header avoids CORS preflight complications (custom headers are already sent with `fetch`).
 - A shared server-side helper (`parseSettingsFromRequest`) centralizes parsing and validation, preventing duplication across route handlers.
 - The client uses a synchronous `getStoredSettings()` utility that reads `localStorage` at request time, avoiding React stale-closure issues.
