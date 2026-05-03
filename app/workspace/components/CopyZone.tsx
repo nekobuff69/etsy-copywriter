@@ -7,6 +7,7 @@ import { Label } from "@/components/ui/label";
 import { ClipboardList, RefreshCw, Square, Copy } from "lucide-react";
 import type { CopyWritingType, ImageAnalysisType } from "@/lib/definitions";
 import { getStoredSettings } from "@/lib/settings";
+import { shortModelName } from "@/lib/display";
 
 interface CopyZoneProps {
 	displayCopy: Partial<CopyWritingType> | null;
@@ -36,12 +37,17 @@ export function CopyZone({
 }: CopyZoneProps) {
 	if (!displayCopy) {
 		return (
-			<Card>
+			<Card className="h-[500px] flex flex-col">
 				<CardHeader>
-					<CardTitle className="text-base">Copy</CardTitle>
+					<CardTitle className="text-base flex items-center gap-2">
+						Copy
+						<Badge variant="secondary" className="text-[10px] font-mono truncate max-w-[180px]">
+							Model Used: {shortModelName(getStoredSettings().copy.model)}
+						</Badge>
+					</CardTitle>
 				</CardHeader>
-				<CardContent>
-					<p className="text-sm text-muted-foreground">
+				<CardContent className="flex-1 flex items-center justify-center">
+					<p className="text-sm text-muted-foreground text-center">
 						Generate copy from analysis to see results.
 					</p>
 				</CardContent>
@@ -50,12 +56,17 @@ export function CopyZone({
 	}
 
 	return (
-		<Card>
+		<Card className="h-[500px] flex flex-col">
 			<CardHeader>
-				<CardTitle className="text-base">Copy</CardTitle>
+				<CardTitle className="text-base flex items-center gap-2">
+					Copy
+					<Badge variant="secondary" className="text-[10px] font-mono truncate max-w-[180px]">
+						Model Used: {shortModelName(getStoredSettings().copy.model)}
+					</Badge>
+				</CardTitle>
 			</CardHeader>
-			<CardContent>
-				<div className="space-y-4 max-h-[60vh] overflow-y-auto pr-1">
+			<CardContent className="flex-1 overflow-hidden flex flex-col">
+				<div className="flex-1 overflow-y-auto space-y-4 pr-1">
 					<div className="space-y-2">
 						{(["option1", "option2", "option3"] as const).map((opt, i) => (
 							<div key={opt}>
@@ -127,37 +138,32 @@ export function CopyZone({
 							</Button>
 						</div>
 					</div>
+				</div>
 
-					<div className="flex flex-wrap gap-2 pt-2">
-						<Button onClick={onCopyAll} size="sm">
-							<ClipboardList className="h-4 w-4 mr-1" />
-							Copy All
-						</Button>
+				<div className="flex flex-wrap gap-2 pt-4 flex-shrink-0">
+					<Button onClick={onCopyAll} size="sm">
+						<ClipboardList className="h-4 w-4 mr-1" />
+						Copy All
+					</Button>
+					<Button
+						onClick={() => onGenerateCopy()}
+						disabled={copyLoading || !hasAnalysis || isHistory}
+						variant="outline"
+						size="sm">
+						<RefreshCw className="h-4 w-4 mr-1" />
+						Regenerate
+					</Button>
+					{copyLoading && (
 						<Button
-							onClick={() => onGenerateCopy()}
-							disabled={copyLoading || !hasAnalysis || isHistory}
-							variant="outline"
+							onClick={onStopCopy}
+							variant="destructive"
 							size="sm">
-							<RefreshCw className="h-4 w-4 mr-1" />
-							Regenerate
+							<Square className="h-4 w-4 mr-1" />
+							Stop
 						</Button>
-						{copyLoading && (
-							<Button
-								onClick={onStopCopy}
-								variant="destructive"
-								size="sm">
-								<Square className="h-4 w-4 mr-1" />
-								Stop
-							</Button>
-						)}
-					</div>
+					)}
 				</div>
 			</CardContent>
-			<div className="px-6 pb-4">
-				<Badge variant="secondary" className="text-[10px] font-mono">
-					Copy: {getStoredSettings().copy.model}
-				</Badge>
-			</div>
 		</Card>
 	);
 }

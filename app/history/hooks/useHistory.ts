@@ -6,6 +6,7 @@ import { toast } from "sonner";
 import {
 	getSessions,
 	deleteSession,
+	deleteSessions,
 	clearHistory,
 	groupSessionsByImage,
 	type HistorySession,
@@ -13,17 +14,52 @@ import {
 } from "@/lib/history";
 
 /**
+ * Parse hash from URL, e.g. `#group-<key>/session-<id>` or `#group-<key>`.
+ */
+function parseHash(): { groupKey: string | null; sessionId: string | null } {
+	if (typeof window === "undefined") return { groupKey: null, sessionId: null };
+	const hash = window.location.hash.replace(/^#/, "");
+	if (!hash) return { groupKey: null, sessionId: null };
+
+	const match = hash.match(/^group-(.+?)(?:\/session-(.+))?$/);
+	if (match) {
+		return { groupKey: decodeURIComponent(match[1]!), sessionId: match[2] ? decodeURIComponent(match[2]) : null };
+	}
+	return { groupKey: null, sessionId: null };
+}
+
+/**
  * useHistory — manages history page state: grouped sessions, expanded state, CRUD.
  */
 export function useHistory() {
 	const router = useRouter();
 
-	const [groups, setGroups] = useState<ImageGroup[]>([]);
+	const [groups, setGroups] = useState<ImageGroup[]>(() =>
+		typeof window !== "undefined" ? groupSessionsByImage(getSessions()) : [],
+	);
 	const [expandedGroupHash, setExpandedGroupHash] = useState<string | null>(null);
 	const [expandedSessionId, setExpandedSessionId] = useState<string | null>(null);
 
+	// Process hash on mount — auto-expand the group/session referenced
 	useEffect(() => {
-		setGroups(groupSessionsByImage(getSessions()));
+		const { groupKey, sessionId } = parseHash();
+		if (!groupKey) return;
+
+		// Defer so groups are already set from the first effect
+		const timer = setTimeout(() => {
+			setExpandedGroupHash(groupKey);
+			if (sessionId) {
+				setExpandedSessionId(sessionId);
+			}
+
+			// Scroll to the group card after a brief render delay
+			setTimeout(() => {
+				const el = document.getElementById(`group-${CSS.escape(groupKey)}`);
+				if (el) el.scrollIntoView({ behavior: "smooth", block: "start" });
+			}, 100);
+		}, 0);
+
+		return () => clearTimeout(timer);
 	}, []);
 
 	const reloadGroups = useCallback(() => {
@@ -32,7 +68,7 @@ export function useHistory() {
 
 	const toggleGroup = useCallback((hash: string) => {
 		setExpandedGroupHash((prev) => (prev === hash ? null : hash));
-		setExpandedSessionId(null); // collapse session rows when toggling group
+		setExpandedSessionId(null);
 	}, []);
 
 	const toggleSession = useCallback((id: string) => {
@@ -43,7 +79,16 @@ export function useHistory() {
 		(id: string) => {
 			deleteSession(id);
 			reloadGroups();
-			toast.success("Session deleted");
+			toast.success("1 session deleted");
+		},
+		[reloadGroups],
+	);
+
+	const handleDeleteSessions = useCallback(
+		(ids: string[]) => {
+			const count = deleteSessions(ids);
+			reloadGroups();
+			toast.success(`${count} session${count !== 1 ? "s" : ""} deleted`);
 		},
 		[reloadGroups],
 	);
@@ -88,6 +133,7 @@ export function useHistory() {
 		toggleGroup,
 		toggleSession,
 		handleDeleteSession,
+		handleDeleteSessions,
 		handleClearHistory,
 		openInWorkspace,
 		copyText,

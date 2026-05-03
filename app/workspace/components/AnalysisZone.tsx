@@ -8,6 +8,7 @@ import { Label } from "@/components/ui/label";
 import { ClipboardList, RefreshCw, Square } from "lucide-react";
 import type { ImageAnalysisType } from "@/lib/definitions";
 import { getStoredSettings } from "@/lib/settings";
+import { shortModelName } from "@/lib/display";
 
 interface AnalysisZoneProps {
 	displayAnalysis: Partial<ImageAnalysisType> | null;
@@ -58,12 +59,17 @@ export function AnalysisZone({
 }: AnalysisZoneProps) {
 	if (!displayAnalysis) {
 		return (
-			<Card>
+			<Card className="h-[500px] flex flex-col">
 				<CardHeader>
-					<CardTitle className="text-base">Analysis</CardTitle>
+					<CardTitle className="text-base flex items-center gap-2">
+						Analysis
+						<Badge variant="secondary" className="text-[10px] font-mono truncate max-w-[180px]">
+							Model Used: {shortModelName(getStoredSettings().vision.model)}
+						</Badge>
+					</CardTitle>
 				</CardHeader>
-				<CardContent>
-					<p className="text-sm text-muted-foreground">
+				<CardContent className="flex-1 flex items-center justify-center">
+					<p className="text-sm text-muted-foreground text-center">
 						Upload an image and analyze to see results.
 					</p>
 				</CardContent>
@@ -72,12 +78,17 @@ export function AnalysisZone({
 	}
 
 	return (
-		<Card>
+		<Card className="h-[500px] flex flex-col">
 			<CardHeader>
-				<CardTitle className="text-base">Analysis</CardTitle>
+				<CardTitle className="text-base flex items-center gap-2">
+					Analysis
+					<Badge variant="secondary" className="text-[10px] font-mono truncate max-w-[180px]">
+						Model Used: {shortModelName(getStoredSettings().vision.model)}
+					</Badge>
+				</CardTitle>
 			</CardHeader>
-			<CardContent>
-				<div className="space-y-3 max-h-[60vh] overflow-y-auto pr-1">
+			<CardContent className="flex-1 overflow-hidden flex flex-col">
+				<div className="flex-1 overflow-y-auto space-y-3 pr-1">
 					<Section title="Core Attributes">
 						<Field label="Subject">
 							<Textarea
@@ -256,40 +267,35 @@ export function AnalysisZone({
 							/>
 						</Field>
 					</Section>
+				</div>
 
-					<div className="flex flex-wrap gap-2 pt-2">
+				<div className="flex flex-wrap gap-2 pt-4 flex-shrink-0">
+					<Button
+						onClick={() => onGenerateCopy()}
+						disabled={copyLoading || !displayAnalysis || isHistory}
+						size="sm">
+						<ClipboardList className="h-4 w-4 mr-1" />
+						Generate Copy
+					</Button>
+					<Button
+						onClick={onRegenerateAnalysis}
+						disabled={analysisLoading || !hasFile || isHistory}
+						variant="outline"
+						size="sm">
+						<RefreshCw className="h-4 w-4 mr-1" />
+						Regenerate
+					</Button>
+					{analysisLoading && (
 						<Button
-							onClick={() => onGenerateCopy()}
-							disabled={copyLoading || !displayAnalysis || isHistory}
+							onClick={onStopAnalysis}
+							variant="destructive"
 							size="sm">
-							<ClipboardList className="h-4 w-4 mr-1" />
-							Generate Copy
+							<Square className="h-4 w-4 mr-1" />
+							Stop
 						</Button>
-						<Button
-							onClick={onRegenerateAnalysis}
-							disabled={analysisLoading || !hasFile || isHistory}
-							variant="outline"
-							size="sm">
-							<RefreshCw className="h-4 w-4 mr-1" />
-							Regenerate
-						</Button>
-						{analysisLoading && (
-							<Button
-								onClick={onStopAnalysis}
-								variant="destructive"
-								size="sm">
-								<Square className="h-4 w-4 mr-1" />
-								Stop
-							</Button>
-						)}
-					</div>
+					)}
 				</div>
 			</CardContent>
-			<div className="px-6 pb-4">
-				<Badge variant="secondary" className="text-[10px] font-mono">
-					Vision: {getStoredSettings().vision.model}
-				</Badge>
-			</div>
 		</Card>
 	);
 }

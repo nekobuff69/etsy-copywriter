@@ -14,7 +14,7 @@ export interface ThumbnailOptions {
 }
 
 export function createThumbnail(file: File, options: ThumbnailOptions = {}): Promise<string> {
-	const {maxWidth = 200, maxHeight = 200, quality = 0.7} = options;
+	const {maxWidth = 500, maxHeight = 500, quality = 0.7} = options;
 
 	return new Promise((resolve, reject) => {
 		const img = new Image();

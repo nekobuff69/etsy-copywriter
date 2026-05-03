@@ -13,6 +13,7 @@ export default function HistoryPage() {
 		toggleGroup,
 		toggleSession,
 		handleDeleteSession,
+		handleDeleteSessions,
 		handleClearHistory,
 		openInWorkspace,
 		copyText,
@@ -51,7 +52,6 @@ export default function HistoryPage() {
 
 			<div className="space-y-4">
 				{groups.map((group) => {
-					// Stable unique key: imageHash for groups, session-id for solo entries
 					const groupKey =
 						group.imageHash ?? `solo-${group.sessions[0]!.id}`;
 
@@ -68,6 +68,7 @@ export default function HistoryPage() {
 							onToggleGroup={() => toggleGroup(groupKey)}
 							onToggleSession={toggleSession}
 							onDeleteSession={handleDeleteSession}
+							onDeleteSessions={handleDeleteSessions}
 							onOpenInWorkspace={openInWorkspace}
 							onCopyText={copyText}
 							onCopyAllForSession={copyAllForSession}

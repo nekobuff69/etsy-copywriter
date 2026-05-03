@@ -12,13 +12,13 @@ import { Button } from "@/components/ui/button";
 import { Plus, RefreshCw } from "lucide-react";
 
 export default function WorkspacePage() {
-	const { upload, analysis, copy, history, global } = useWorkspace();
+	const { upload, analysis, copy, history, global, sessionNav } = useWorkspace();
 
 	return (
 		<div className="min-h-screen bg-background text-foreground">
 			{/* Sub-header with page-specific actions */}
 			<div className="border-b px-4 py-2 flex items-center justify-between">
-				<Header isHistory={global.isHistory} />
+				<Header isHistory={global.isHistory} sessionNav={sessionNav} />
 				<Button variant="outline" size="sm" onClick={history.startNewSession}>
 					<Plus className="h-4 w-4 mr-1" />
 					New Session
@@ -29,15 +29,6 @@ export default function WorkspacePage() {
 				{global.error && (
 					<Alert variant="destructive" className="mb-4">
 						<AlertDescription>{global.error}</AlertDescription>
-					</Alert>
-				)}
-
-				{global.isHistory && (
-					<Alert className="mb-4">
-						<AlertDescription>
-							You are viewing a past session. Create a{" "}
-							<strong>New Session</strong> to edit or generate new copy.
-						</AlertDescription>
 					</Alert>
 				)}
 
@@ -74,6 +65,7 @@ export default function WorkspacePage() {
 					<UploadZone
 						file={upload.file}
 						previewUrl={upload.previewUrl}
+						thumbnailUrl={upload.thumbnailUrl}
 						onDrop={upload.onDrop}
 						onFileInput={upload.onFileInput}
 						onAnalyze={upload.startAnalysis}

@@ -17,6 +17,7 @@ interface HistoryGroupCardProps {
 	onToggleGroup: () => void;
 	onToggleSession: (id: string) => void;
 	onDeleteSession: (id: string) => void;
+	onDeleteSessions: (ids: string[]) => void;
 	onOpenInWorkspace: (session: HistorySession) => void;
 	onCopyText: (text: string) => void;
 	onCopyAllForSession: (session: HistorySession) => void;
@@ -33,12 +34,15 @@ export function HistoryGroupCard({
 	onToggleGroup,
 	onToggleSession,
 	onDeleteSession,
+	onDeleteSessions,
 	onOpenInWorkspace,
 	onCopyText,
 	onCopyAllForSession,
 }: HistoryGroupCardProps) {
+	const groupId = imageHash ? `group-${imageHash}` : `group-solo-${sessions[0]?.id}`;
+
 	return (
-		<div className="border rounded-lg overflow-hidden bg-card">
+		<div id={groupId} className="border rounded-lg overflow-hidden bg-card">
 			<button
 				onClick={onToggleGroup}
 				className="w-full flex items-start gap-4 p-4 text-left hover:bg-accent/50 transition-colors"
@@ -75,7 +79,7 @@ export function HistoryGroupCard({
 				<div className="border-t">
 					{sessions.map((session, index) => (
 						<HistorySessionRow
-							key={`${session.id}-${index}`}
+							key={session.id}
 							session={session}
 							isExpanded={expandedSessionId === session.id}
 							onToggle={() => onToggleSession(session.id)}
@@ -90,9 +94,7 @@ export function HistoryGroupCard({
 							variant="ghost"
 							size="sm"
 							className="text-xs text-destructive hover:text-destructive"
-							onClick={() => {
-								sessions.forEach((s) => onDeleteSession(s.id));
-							}}
+							onClick={() => onDeleteSessions(sessions.map((s) => s.id))}
 						>
 							<Trash2 className="h-3 w-3 mr-1" />
 							Delete all in group

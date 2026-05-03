@@ -12,6 +12,14 @@ export function useUpload() {
 	const [imageHash, setImageHash] = useState<string | null>(null);
 	const fileInputRef = useRef<HTMLInputElement>(null);
 
+	/**
+	 * Direct setter — used by session restoration to inject a stored thumbnail.
+	 * Does not reset file, previewUrl, or imageHash.
+	 */
+	const setStoredThumbnail = useCallback((url: string | null) => {
+		setThumbnailUrl(url);
+	}, []);
+
 	const deriveFromNewFile = useCallback((f: File | null) => {
 		if (!f) {
 			setPreviewUrl(null);
@@ -61,6 +69,7 @@ export function useUpload() {
 		thumbnailUrl,
 		imageHash,
 		handleFile,
+		setThumbnailUrl: setStoredThumbnail,
 		onDrop,
 		onFileInput,
 		fileInputRef,

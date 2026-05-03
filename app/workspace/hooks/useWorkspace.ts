@@ -1,11 +1,13 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import {
 	getSessions,
 	deleteSession,
 	clearHistory,
+	groupSessionsByImageHash,
 	type HistorySession,
 } from "@/lib/history";
 import {
@@ -23,6 +25,7 @@ export interface UploadGroup {
 	previewUrl: string | null;
 	thumbnailUrl: string | null;
 	handleFile: (f: File | null) => void;
+	setThumbnailUrl: (url: string | null) => void;
 	onDrop: (e: React.DragEvent) => void;
 	onFileInput: (e: React.ChangeEvent<HTMLInputElement>) => void;
 	startAnalysis: () => void;
@@ -67,12 +70,40 @@ export interface HistoryGroup {
 	activeHistoryId: string | null;
 }
 
+export interface SessionNavInfo {
+	currentIndex: number;
+	totalCount: number;
+	onPrev: () => void;
+	onNext: () => void;
+	onBackToGroup: () => void;
+}
+
 export interface GlobalGroup {
 	stage: "idle" | "analyzing" | "generating" | "done" | "error";
 	error: string | null;
 	isLoading: boolean;
 	isHistory: boolean;
 	stop: () => void;
+}
+
+/**
+ * Build session navigation state from the current restored session.
+ * Returns the ordered list of sibling sessions and the current index.
+ */
+function buildSessionNav(sessionId: string) {
+	const allSessions = getSessions();
+	const current = allSessions.find((s) => s.id === sessionId);
+	if (!current) return { siblings: [], currentIndex: -1 };
+
+	const groups = groupSessionsByImageHash(allSessions);
+	const groupKey = current.imageHash ?? `solo-${current.id}`;
+	const group = groups.get(groupKey);
+	if (!group || group.length <= 1) return { siblings: [], currentIndex: -1 };
+
+	// Sort by createdAt ascending so "Session 1 of N" is earliest first
+	const sorted = [...group].sort((a, b) => a.createdAt - b.createdAt);
+	const idx = sorted.findIndex((s) => s.id === sessionId);
+	return { siblings: sorted, currentIndex: idx };
 }
 
 /**
@@ -106,12 +137,18 @@ export function useWorkspace(): {
 	copy: CopyGroup;
 	history: HistoryGroup;
 	global: GlobalGroup;
+	sessionNav: SessionNavInfo | null;
 } {
+	const router = useRouter();
 	const [stage, setStage] = useState<
 		"idle" | "analyzing" | "generating" | "done" | "error"
 	>("idle");
 	const [error, setError] = useState<string | null>(null);
 	const [sessionView, setSessionView] = useState<SessionView>(newSessionView());
+	const [sessionNav, setSessionNav] = useState<{
+		siblings: HistorySession[];
+		currentIndex: number;
+	}>({ siblings: [], currentIndex: -1 });
 
 	const isHistory = isHistoryMode(sessionView);
 
@@ -129,6 +166,7 @@ export function useWorkspace(): {
 			rawHandleFile(f);
 			if (f && isHistoryMode(sessionView)) {
 				setSessionView(newSessionView());
+				setSessionNav({ siblings: [], currentIndex: -1 });
 			}
 		},
 		[rawHandleFile, sessionView],
@@ -178,20 +216,69 @@ export function useWorkspace(): {
 		onReloadHistory: loadHistory,
 	});
 
+	// Switch to a specific session (used by nav)
+	const switchToSession = useCallback(
+		(session: HistorySession) => {
+			setEditedAnalysis(session.analysis);
+			setEditedCopy(session.copy);
+			uploadState.handleFile(null);
+			uploadState.setThumbnailUrl(session.thumbnail ?? null);
+			setStage("done");
+			setError(null);
+			setSessionView(viewHistory(session.id));
+			// Recompute nav for the new session
+			setSessionNav(buildSessionNav(session.id));
+			router.replace(`/workspace?session=${session.id}`, { scroll: false });
+		},
+		[uploadState, router],
+	);
+
 	// Session restoration from ?session= query param
 	const restoreSession = useCallback(
 		(session: HistorySession) => {
 			setEditedAnalysis(session.analysis);
 			setEditedCopy(session.copy);
 			uploadState.handleFile(null);
+			uploadState.setThumbnailUrl(session.thumbnail ?? null);
 			setStage("done");
 			setError(null);
 			setSessionView(viewHistory(session.id));
+			setSessionNav(buildSessionNav(session.id));
 		},
 		[uploadState],
 	);
 
 	useSessionRestoration(restoreSession);
+
+	// Navigation methods
+	const navigatePrev = useCallback(() => {
+		const { siblings, currentIndex } = sessionNav;
+		if (currentIndex <= 0) return;
+		const prev = siblings[currentIndex - 1];
+		if (prev) switchToSession(prev);
+	}, [sessionNav, switchToSession]);
+
+	const navigateNext = useCallback(() => {
+		const { siblings, currentIndex } = sessionNav;
+		if (currentIndex < 0 || currentIndex >= siblings.length - 1) return;
+		const next = siblings[currentIndex + 1];
+		if (next) switchToSession(next);
+	}, [sessionNav, switchToSession]);
+
+	const navigateBackToGroup = useCallback(() => {
+		const activeId = sessionView.activeHistoryId;
+		if (!activeId) {
+			router.push("/history");
+			return;
+		}
+		const session = getSessions().find((s) => s.id === activeId);
+		if (!session) {
+			router.push("/history");
+			return;
+		}
+		const groupKey = session.imageHash ?? `solo-${session.id}`;
+		router.push(`/history#group-${encodeURIComponent(groupKey)}/session-${encodeURIComponent(session.id)}`);
+	}, [sessionView.activeHistoryId, router]);
 
 	const isLoading =
 		pipeline.analysisLoading ||
@@ -224,6 +311,7 @@ export function useWorkspace(): {
 		setStage("idle");
 		setError(null);
 		setSessionView(newSessionView());
+		setSessionNav({ siblings: [], currentIndex: -1 });
 	}, [uploadState]);
 
 	const handleDeleteSession = useCallback(
@@ -277,12 +365,16 @@ export function useWorkspace(): {
 	const displayAnalysis = pipeline.displayAnalysis ?? editedAnalysis;
 	const displayCopy = pipeline.displayCopy ?? editedCopy;
 
+	const hasSessionNav =
+		isHistory && sessionNav.siblings.length > 1 && sessionNav.currentIndex >= 0;
+
 	return {
 		upload: {
 			file: uploadState.file,
 			previewUrl: uploadState.previewUrl,
 			thumbnailUrl: uploadState.thumbnailUrl,
 			handleFile,
+			setThumbnailUrl: uploadState.setThumbnailUrl,
 			onDrop: uploadState.onDrop,
 			onFileInput: uploadState.onFileInput,
 			startAnalysis: () => pipeline.startAnalysis(uploadState.file),
@@ -323,5 +415,15 @@ export function useWorkspace(): {
 			isHistory,
 			stop: pipeline.stop,
 		},
+		// Extra exports for session navigation
+		sessionNav: hasSessionNav
+			? {
+					currentIndex: sessionNav.currentIndex,
+					totalCount: sessionNav.siblings.length,
+					onPrev: navigatePrev,
+					onNext: navigateNext,
+					onBackToGroup: navigateBackToGroup,
+				}
+			: null,
 	};
 }

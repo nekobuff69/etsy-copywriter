@@ -156,6 +156,20 @@ export function deleteSession(id: string) {
 	writeSessions(sessions);
 }
 
+/**
+ * Delete multiple sessions in one operation.
+ * Returns the count of deleted sessions.
+ */
+export function deleteSessions(ids: string[]): number {
+	const sessions = readSessions();
+	const before = sessions.length;
+	const idSet = new Set(ids);
+	const remaining = sessions.filter((s) => !idSet.has(s.id));
+	const deleted = before - remaining.length;
+	writeSessions(remaining);
+	return deleted;
+}
+
 export function clearHistory() {
 	if (typeof window === "undefined") return;
 	localStorage.removeItem(STORAGE_KEY);

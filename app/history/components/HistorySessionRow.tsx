@@ -14,6 +14,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import type { HistorySession } from "@/lib/history";
+import { shortModelName } from "@/lib/display";
 
 interface HistorySessionRowProps {
 	session: HistorySession;
@@ -56,10 +57,10 @@ export function HistorySessionRow({
 
 				<div className="flex items-center gap-2 flex-wrap flex-1 min-w-0">
 					<Badge variant="outline" className="text-xs">
-						V: {shortModelName(visionModel)}
+						👁️ {shortModelName(visionModel)}
 					</Badge>
 					<Badge variant="outline" className="text-xs">
-						C: {shortModelName(copyModel)}
+						✍️ {shortModelName(copyModel)}
 					</Badge>
 					<Badge variant="secondary" className="text-xs">
 						{providerLabel}
@@ -250,9 +251,4 @@ export function HistorySessionRow({
 	);
 }
 
-function shortModelName(model: string): string {
-	// Extract the last segment of a model name like "qwen/qwen3-vl-8b-instruct"
-	const parts = model.split("/");
-	const last = parts[parts.length - 1];
-	return last.length > 24 ? last.slice(0, 21) + "…" : last;
-}
+

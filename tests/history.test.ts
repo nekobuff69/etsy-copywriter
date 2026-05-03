@@ -269,8 +269,8 @@ describe("history", () => {
 		it("should never produce a group with an empty sessions array", () => {
 			let tick = 9000;
 			vi.spyOn(Date, "now").mockImplementation(() => tick++);
-			const s1 = saveSession({ thumbnail: "a", analysis: mockAnalysis, copy: mockCopy, imageHash: "h1" });
-			const s2 = saveSession({ thumbnail: "b", analysis: mockAnalysis, copy: mockCopy, imageHash: "h1" });
+			saveSession({ thumbnail: "a", analysis: mockAnalysis, copy: mockCopy, imageHash: "h1" });
+			saveSession({ thumbnail: "b", analysis: mockAnalysis, copy: mockCopy, imageHash: "h1" });
 			vi.restoreAllMocks();
 
 			const groups = groupSessionsByImage(getSessions());
