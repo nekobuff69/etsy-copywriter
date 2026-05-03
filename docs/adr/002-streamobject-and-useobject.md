@@ -22,5 +22,5 @@ Use `streamObject` on the server and `experimental_useObject` on the client.
 
 **Consequences:**
 - Import name is `experimental_useObject` (aliased to `useObject` internally).
-- Must suppress deprecation warnings in docs.
+- Must suppress deprecation warnings via `globalThis.AI_SDK_LOG_WARNINGS = false` in both pipeline modules.
 - Future upgrade path: swap `streamObject` → `streamText` + `output` on server only.

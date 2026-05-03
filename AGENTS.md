@@ -5,7 +5,7 @@
 - `pnpm dev` — Next.js dev server on `http://localhost:3000`
 - `pnpm build` — production build
 - `pnpm lint` — ESLint (Next.js flat config)
-- `pnpm test` — Vitest (`tests/getImageAnalysis.test.ts`, `tests/history.test.ts`, `tests/session.test.ts`, `tests/file-utils.test.ts`, `tests/getCopyWritings.test.ts`, `tests/file-hash.test.ts`, `tests/settings.test.ts`, `tests/api-settings.test.ts`, `tests/llm-provider.test.ts`)
+- `pnpm test` — Vitest (`tests/getImageAnalysis.test.ts`, `tests/history.test.ts`, `tests/session.test.ts`, `tests/file-utils.test.ts`, `tests/getCopyWritings.test.ts`, `tests/file-hash.test.ts`, `tests/settings.test.ts`, `tests/api-settings.test.ts`, `tests/llm-provider.test.ts`, `tests/history-duplicate-ids.test.ts`)
 
 ## Environment
 - Requires `OPENROUTER_API_KEY` in `.env`

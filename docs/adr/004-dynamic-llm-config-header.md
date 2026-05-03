@@ -16,7 +16,7 @@ Pass LLM configuration via a custom HTTP header `X-LLM-Config` on every API requ
 
 **Rationale:**
 - The header works uniformly across all request types: JSON bodies (`/api/generate-copy`, `/api/health-check`) and FormData multipart (`/api/analyze-image`). The "Run All" feature calls both endpoints sequentially from the client, so both header types are used in one user flow.
-- Base64-encoded JSON in a header avoids CORS preflight complications (custom headers are already sent with `fetch`).
+- Base64-encoded JSON in a header keeps the config out of URLs and request bodies. Custom headers do trigger a CORS preflight (`OPTIONS`), but since the app is a single-origin Next.js app (no cross-origin API calls), no preflight is actually sent.
 - A shared server-side helper (`parseSettingsFromRequest`) centralizes parsing and validation, preventing duplication across route handlers.
 - The client uses a synchronous `getStoredSettings()` utility that reads `localStorage` at request time, avoiding React stale-closure issues.
 - If the client sends an empty `apiKey`, the server falls back to `process.env.OPENROUTER_API_KEY`, preserving the zero-config out-of-box experience.
