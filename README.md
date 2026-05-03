@@ -63,8 +63,7 @@ app/
     components/UploadZone.tsx          # File drop, preview, Analyze / Run All / Stop buttons
     components/AnalysisZone.tsx        # Editable 4-section analysis form + Generate Copy / Stop
     components/CopyZone.tsx            # Titles, tags, description with per-field copy buttons
-    components/Header.tsx              # Title, history toggle, New Session, theme switcher
-    components/HistorySidebar.tsx      # Session list with thumbnail, restore, delete, clear
+    components/Header.tsx              # Title, read-only badge
     components/DebugPanel.tsx          # Collapsible debug: stage, loading, errors, raw JSON
   history/
     page.tsx                           # Dedicated history page

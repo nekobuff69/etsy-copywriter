@@ -60,8 +60,6 @@ export interface CopyGroup {
 
 export interface HistoryGroup {
 	history: HistorySession[];
-	historyOpen: boolean;
-	setHistoryOpen: (v: boolean) => void;
 	restoreSession: (session: HistorySession) => void;
 	startNewSession: () => void;
 	handleDeleteSession: (id: string) => void;
@@ -113,7 +111,6 @@ export function useWorkspace(): {
 		"idle" | "analyzing" | "generating" | "done" | "error"
 	>("idle");
 	const [error, setError] = useState<string | null>(null);
-	const [historyOpen, setHistoryOpen] = useState(false);
 	const [sessionView, setSessionView] = useState<SessionView>(newSessionView());
 
 	const isHistory = isHistoryMode(sessionView);
@@ -313,8 +310,6 @@ export function useWorkspace(): {
 		},
 		history: {
 			history,
-			historyOpen,
-			setHistoryOpen,
 			restoreSession,
 			startNewSession,
 			handleDeleteSession,

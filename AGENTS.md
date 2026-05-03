@@ -16,7 +16,7 @@
 ### Entrypoints
 - Next.js 16 App Router. Root page (`app/page.tsx`) redirects to `/workspace`.
 - Real app page is `app/workspace/page.tsx` — thin layout shell wiring `useWorkspace` hook to 3 zone components: Upload, Analysis, Copy.
-- Session navigation: history sidebar with active highlighting, "New Session" button, read-only banner when viewing past sessions.
+- Session history is managed via the `/history` page (grouped by image, expandable cards). Past sessions viewed in the workspace show a read-only banner.
 
 ### Workspace (`app/workspace/`)
 - **`hooks/useWorkspace.ts`** — single custom hook encapsulating all client state, `useObject` instances, file/thumbnail lifecycle, history CRUD, and action dispatch. Returns grouped interface `{upload, analysis, copy, history, global}` so `page.tsx` stays declarative.
