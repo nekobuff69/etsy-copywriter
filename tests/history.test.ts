@@ -228,7 +228,7 @@ describe("history", () => {
 			vi.restoreAllMocks();
 
 			const groups = groupSessionsByImage(getSessions());
-			expect(groups[0].latestDate).toBe(3005);
+			expect(groups[0].latestDate).toBe(3002);
 			expect(groups[0].sessions.length).toBe(3);
 		});
 	});

@@ -16,11 +16,36 @@ export interface HistorySession {
 const STORAGE_KEY = "etsy-copywriter-history";
 const MAX_SESSIONS = 20;
 
+function generateId(): string {
+	return typeof crypto !== "undefined" && crypto.randomUUID
+		? crypto.randomUUID()
+		: `${Date.now()}-${Math.random().toString(36).slice(2, 9)}`;
+}
+
 function readSessions(): HistorySession[] {
 	if (typeof window === "undefined") return [];
 	try {
 		const raw = localStorage.getItem(STORAGE_KEY);
-		return raw ? (JSON.parse(raw) as HistorySession[]) : [];
+		if (!raw) return [];
+		const sessions = JSON.parse(raw) as HistorySession[];
+
+		// Fix duplicate IDs from old Date.now() id scheme (pre-UUID migration).
+		// Two sessions with the same id cause the expand/collapse toggle to affect
+		// both because isExpanded uses expandedSessionId === session.id for comparison.
+		let needsSave = false;
+		const seenIds = new Set<string>();
+		for (const session of sessions) {
+			if (!session.id || seenIds.has(session.id)) {
+				session.id = generateId();
+				needsSave = true;
+			}
+			seenIds.add(session.id);
+		}
+		if (needsSave) {
+			localStorage.setItem(STORAGE_KEY, JSON.stringify(sessions));
+		}
+
+		return sessions;
 	} catch {
 		return [];
 	}
@@ -51,9 +76,7 @@ export function saveSession(params: {
 }): HistorySession {
 	const sessions = readSessions();
 	const session: HistorySession = {
-		id: typeof crypto !== 'undefined' && crypto.randomUUID
-			? crypto.randomUUID()
-			: `${Date.now()}-${Math.random().toString(36).slice(2, 9)}`,
+		id: generateId(),
 		thumbnail: params.thumbnail,
 		analysis: params.analysis,
 		copy: params.copy,
