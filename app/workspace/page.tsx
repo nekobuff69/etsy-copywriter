@@ -25,21 +25,26 @@ export default function WorkspacePage() {
 
 	return (
 		<div className="min-h-screen bg-background text-foreground">
-			{/* Sub-header with 3-column layout: title (left), nav (center), New Session (right) */}
+			{/* Sub-header: 3-col in history mode, title+button in normal mode */}
 			<div className="border-b px-4 py-2 flex items-center">
-				{/* Left column: title + Read-only badge */}
+				{/* Left column: title + badge + New Session (normal mode) */}
 				<div className="flex-1 flex items-center gap-3">
 					<h1 className="text-lg font-semibold">
 						{global.isHistory ? "History Session" : "Workspace"}
 					</h1>
-					{global.isHistory && (
+					{global.isHistory ? (
 						<Badge variant="secondary" className="text-xs">
 							Read-only
 						</Badge>
+					) : (
+						<Button variant="outline" size="sm" onClick={history.startNewSession}>
+							<Plus className="h-4 w-4 mr-1" />
+							New Session
+						</Button>
 					)}
 				</div>
 
-				{/* Center column: session nav */}
+				{/* Center column: session nav (history mode only) */}
 				{global.isHistory && sessionNav && (
 					<div className="flex-1 flex justify-center items-center gap-2">
 						<Button
@@ -74,12 +79,14 @@ export default function WorkspacePage() {
 					</div>
 				)}
 
-				{/* Right column: New Session */}
+				{/* Right column: spacer (normal) or New Session (history) */}
 				<div className="flex-1 flex justify-end">
-					<Button variant="outline" size="sm" onClick={history.startNewSession}>
-						<Plus className="h-4 w-4 mr-1" />
-						New Session
-					</Button>
+					{global.isHistory && (
+						<Button variant="outline" size="sm" onClick={history.startNewSession}>
+							<Plus className="h-4 w-4 mr-1" />
+							New Session
+						</Button>
+					)}
 				</div>
 			</div>
 
