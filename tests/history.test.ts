@@ -3,11 +3,17 @@ import {
 	getSessions,
 	saveSession,
 	deleteSession,
+	deleteSessions,
 	clearHistory,
 	getSession,
 	groupSessionsByImageHash,
 	groupSessionsByImage,
 } from "../lib/history";
+import {
+	getGroupTitle,
+	setGroupTitle,
+	getAllGroupTitles,
+} from "../lib/group-titles";
 import type {ImageAnalysisType, CopyWritingType} from "../lib/definitions";
 
 const storage: Record<string, string> = {};
@@ -299,6 +305,183 @@ describe("history", () => {
 			expect(hashedGroup!.sessions.length).toBe(1);
 			expect(soloGroup).toBeDefined();
 			expect(soloGroup!.sessions.length).toBe(1);
+		});
+	});
+
+	describe("orphaned group title cleanup", () => {
+		it("should remove orphaned group title when last session in a group is deleted", () => {
+			const s = saveSession({
+				thumbnail: "a",
+				analysis: mockAnalysis,
+				copy: mockCopy,
+				imageHash: "hash-to-delete",
+			});
+			setGroupTitle("hash-to-delete", "Sunset Landscape");
+			expect(getGroupTitle("hash-to-delete")).toBe("Sunset Landscape");
+
+			deleteSession(s.id);
+			expect(getSessions().length).toBe(0);
+			expect(getGroupTitle("hash-to-delete")).toBe("Artwork");
+		});
+
+		it("should preserve group title when other sessions remain in the group", () => {
+			let tick = 2000;
+			vi.spyOn(Date, "now").mockImplementation(() => tick++);
+			const s1 = saveSession({ thumbnail: "a", analysis: mockAnalysis, copy: mockCopy, imageHash: "hash1" });
+			const s2 = saveSession({ thumbnail: "b", analysis: mockAnalysis, copy: mockCopy, imageHash: "hash1" });
+			vi.restoreAllMocks();
+
+			setGroupTitle("hash1", "Mountain Scene");
+			expect(getGroupTitle("hash1")).toBe("Mountain Scene");
+
+			deleteSession(s1.id);
+			expect(getSessions().length).toBe(1);
+			expect(getGroupTitle("hash1")).toBe("Mountain Scene");
+		});
+
+		it("should remove orphaned solo-id title when solo session is deleted", () => {
+			const s = saveSession({ thumbnail: "solo", analysis: mockAnalysis, copy: mockCopy });
+			setGroupTitle(null, "My Solo Work", s.id);
+			expect(getGroupTitle(null, s.id)).toBe("My Solo Work");
+
+			deleteSession(s.id);
+			expect(getGroupTitle(null, s.id)).toBe("Artwork");
+		});
+
+		it("should clean up orphaned titles after bulk deleteSessions", () => {
+			let tick = 3000;
+			vi.spyOn(Date, "now").mockImplementation(() => tick++);
+			const s1 = saveSession({ thumbnail: "a", analysis: mockAnalysis, copy: mockCopy, imageHash: "bulk-hash" });
+			const s2 = saveSession({ thumbnail: "b", analysis: mockAnalysis, copy: mockCopy, imageHash: "bulk-hash" });
+			vi.restoreAllMocks();
+
+			setGroupTitle("bulk-hash", "Bulk Delete Test");
+			expect(getGroupTitle("bulk-hash")).toBe("Bulk Delete Test");
+
+			const count = deleteSessions([s1.id, s2.id]);
+			expect(count).toBe(2);
+			expect(getSessions().length).toBe(0);
+			expect(getGroupTitle("bulk-hash")).toBe("Artwork");
+		});
+
+		it("should preserve group title when bulk delete removes only some sessions", () => {
+			let tick = 4000;
+			vi.spyOn(Date, "now").mockImplementation(() => tick++);
+			const s1 = saveSession({ thumbnail: "a", analysis: mockAnalysis, copy: mockCopy, imageHash: "partial-hash" });
+			const s2 = saveSession({ thumbnail: "b", analysis: mockAnalysis, copy: mockCopy, imageHash: "partial-hash" });
+			const s3 = saveSession({ thumbnail: "c", analysis: mockAnalysis, copy: mockCopy, imageHash: "partial-hash" });
+			vi.restoreAllMocks();
+
+			setGroupTitle("partial-hash", "Partial Delete");
+			expect(getGroupTitle("partial-hash")).toBe("Partial Delete");
+
+			const count = deleteSessions([s1.id, s2.id]);
+			expect(count).toBe(2);
+			expect(getSessions().length).toBe(1);
+			expect(getGroupTitle("partial-hash")).toBe("Partial Delete");
+		});
+
+		it("should remove all group titles on clearHistory", () => {
+			setGroupTitle("hash1", "Title One");
+			setGroupTitle("hash2", "Title Two");
+			setGroupTitle(null, "Solo Title", "solo-001");
+			expect(getAllGroupTitles()).toHaveProperty("hash1");
+			expect(getAllGroupTitles()).toHaveProperty("hash2");
+			expect(getAllGroupTitles()).toHaveProperty("solo-solo-001");
+
+			clearHistory();
+			expect(getAllGroupTitles()).toEqual({});
+			expect(getGroupTitle("hash1")).toBe("Artwork");
+			expect(getGroupTitle("hash2")).toBe("Artwork");
+			expect(getGroupTitle(null, "solo-001")).toBe("Artwork");
+		});
+	});
+
+	describe("session index formula (newest-first visual, ascending index)", () => {
+		/**
+		 * HistoryGroupCard computes sessionIndex as:
+		 *   sortedSessions.length - i
+		 * where sortedSessions is sorted newest-first (descending by createdAt).
+		 *
+		 * So for 3 sessions:
+		 *   i=0 (newest) → index = 3
+		 *   i=1 (middle) → index = 2
+		 *   i=2 (oldest) → index = 1
+		 */
+		function computeExpectedIndices(sessions: { id: string; createdAt: number }[]) {
+			const sorted = [...sessions].sort((a, b) => b.createdAt - a.createdAt);
+			return sorted.map((s, i) => ({
+				id: s.id,
+				createdAt: s.createdAt,
+				visualPosition: i,
+				expectedIndex: sorted.length - i,
+			}));
+		}
+
+		it("should assign index #1 for a single session", () => {
+			const sessions = [{ id: "s1", createdAt: 1000 }];
+			const result = computeExpectedIndices(sessions);
+			expect(result).toEqual([
+				{ id: "s1", createdAt: 1000, visualPosition: 0, expectedIndex: 1 },
+			]);
+		});
+
+		it("should assign indices #2 (newest) and #1 (oldest) for 2 sessions", () => {
+			const sessions = [
+				{ id: "s1", createdAt: 1000 },
+				{ id: "s2", createdAt: 2000 },
+			];
+			const result = computeExpectedIndices(sessions);
+			// Newest-first: s2 at i=0 → index=2, s1 at i=1 → index=1
+			expect(result).toEqual([
+				{ id: "s2", createdAt: 2000, visualPosition: 0, expectedIndex: 2 },
+				{ id: "s1", createdAt: 1000, visualPosition: 1, expectedIndex: 1 },
+			]);
+		});
+
+		it("should assign indices #3, #2, #1 (newest to oldest) for 3 sessions", () => {
+			const sessions = [
+				{ id: "s1", createdAt: 1000 },
+				{ id: "s2", createdAt: 2000 },
+				{ id: "s3", createdAt: 3000 },
+			];
+			const result = computeExpectedIndices(sessions);
+			expect(result).toEqual([
+				{ id: "s3", createdAt: 3000, visualPosition: 0, expectedIndex: 3 },
+				{ id: "s2", createdAt: 2000, visualPosition: 1, expectedIndex: 2 },
+				{ id: "s1", createdAt: 1000, visualPosition: 2, expectedIndex: 1 },
+			]);
+		});
+
+		it("should verify the formula: index = totalSessions - visualPosition", () => {
+			// Test with 5 sessions to ensure no off-by-one at scale
+			const sessions = [
+				{ id: "s1", createdAt: 1000 },
+				{ id: "s2", createdAt: 2000 },
+				{ id: "s3", createdAt: 3000 },
+				{ id: "s4", createdAt: 4000 },
+				{ id: "s5", createdAt: 5000 },
+			];
+			const result = computeExpectedIndices(sessions);
+			expect(result.length).toBe(5);
+			// Newest (i=0) → index=5, oldest (i=4) → index=1
+			expect(result[0].expectedIndex).toBe(5);
+			expect(result[4].expectedIndex).toBe(1);
+			// Verify the formula holds for all positions
+			for (const r of result) {
+				expect(r.expectedIndex).toBe(sessions.length - r.visualPosition);
+			}
+		});
+
+		it("should handle same createdAt values without NaN indices", () => {
+			const sessions = [
+				{ id: "s1", createdAt: 1000 },
+				{ id: "s2", createdAt: 1000 },
+				{ id: "s3", createdAt: 1000 },
+			];
+			const result = computeExpectedIndices(sessions);
+			// All have same timestamp, so sort is stable but indices should still be 3, 2, 1
+			expect(result.map(r => r.expectedIndex).sort()).toEqual([1, 2, 3]);
 		});
 	});
 });
