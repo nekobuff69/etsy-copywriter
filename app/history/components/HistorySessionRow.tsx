@@ -45,7 +45,7 @@ export function HistorySessionRow({
 	const copyModel = session.copyModel ?? "default";
 
 	return (
-		<div className="border-b last:border-b-0">
+		<div id={`session-${session.id}`} className="border-b last:border-b-0">
 			{/* Session header row */}
 			<button
 				onClick={onToggle}

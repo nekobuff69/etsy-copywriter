@@ -17,7 +17,7 @@ export default function WorkspacePage() {
 	return (
 		<div className="min-h-screen bg-background text-foreground">
 			{/* Sub-header with page-specific actions */}
-			<div className="border-b px-4 py-2 flex items-center justify-between">
+			<div className="border-b px-4 py-2 flex items-center">
 				<Header isHistory={global.isHistory} sessionNav={sessionNav} />
 				<Button variant="outline" size="sm" onClick={history.startNewSession}>
 					<Plus className="h-4 w-4 mr-1" />

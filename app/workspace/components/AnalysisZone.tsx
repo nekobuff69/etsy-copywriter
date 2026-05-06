@@ -65,8 +65,8 @@ export function AnalysisZone({
 				<CardHeader>
 					<CardTitle className="text-base flex items-center gap-2">
 						Analysis
-						<Badge variant="secondary" className="text-[10px] font-mono truncate max-w-[180px]">
-							Model Used: {shortModelName(getStoredSettings().vision.model)}
+						<Badge variant="secondary" className="text-[10px] font-mono truncate max-w-[180px] text-left justify-start">
+							👁️ {shortModelName(getStoredSettings().vision.model)}
 						</Badge>
 					</CardTitle>
 				</CardHeader>

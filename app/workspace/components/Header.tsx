@@ -30,7 +30,7 @@ export function Header({ isHistory, sessionNav }: HeaderProps) {
 			</div>
 
 			{isHistory && sessionNav && (
-				<div className="flex items-center gap-2">
+				<div className="flex-1 flex justify-center items-center gap-2">
 					<Button
 						variant="ghost"
 						size="sm"

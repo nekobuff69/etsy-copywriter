@@ -58,11 +58,18 @@ export function useHistory() {
 				setExpandedSessionId(sessionId);
 			}
 
-			// Scroll to the group card after a brief render delay
+			// Scroll to the session row (or group card if session not found)
 			setTimeout(() => {
-				const el = document.getElementById(`group-${CSS.escape(groupKey)}`);
-				if (el) el.scrollIntoView({ behavior: "smooth", block: "start" });
-			}, 100);
+				if (sessionId) {
+					const sessionEl = document.getElementById(`session-${sessionId}`);
+					if (sessionEl) {
+						sessionEl.scrollIntoView({ behavior: "smooth", block: "start" });
+						return;
+					}
+				}
+				const groupEl = document.getElementById(`group-${CSS.escape(groupKey)}`);
+				if (groupEl) groupEl.scrollIntoView({ behavior: "smooth", block: "start" });
+			}, 150);
 		}, 0);
 
 		return () => clearTimeout(timer);

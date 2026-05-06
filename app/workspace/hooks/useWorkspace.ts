@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import {
@@ -110,14 +110,16 @@ function buildSessionNav(sessionId: string) {
 
 /**
  * Reads `?session=<id>` from the URL, loads the session from localStorage,
- * and returns it. After reading, the query param is replaced away so refresh
- * doesn't re-trigger restoration.
+ * and restores it. The ?session= param is preserved in the URL during history
+ * mode so page refresh restores the session.
  */
 function useSessionRestoration(
 	onRestore: (session: HistorySession) => void,
+	hasRestoredRef: React.MutableRefObject<boolean>,
 ) {
 	useEffect(() => {
 		if (typeof window === "undefined") return;
+		if (hasRestoredRef.current) return;
 		const params = new URLSearchParams(window.location.search);
 		const sessionId = params.get("session");
 		if (!sessionId) return;
@@ -126,9 +128,10 @@ function useSessionRestoration(
 		const session = sessions.find((s) => s.id === sessionId);
 		if (session) {
 			onRestore(session);
+			hasRestoredRef.current = true;
 		}
 
-	}, [onRestore]);
+	}, [onRestore, hasRestoredRef]);
 }
 
 export function useWorkspace(): {
@@ -152,6 +155,8 @@ export function useWorkspace(): {
 
 	const isHistory = isHistoryMode(sessionView);
 
+	const hasRestoredRef = useRef(false);
+
 	const [activeModels, setActiveModels] = useState<{
 		vision: string | null;
 		copy: string | null;
@@ -172,6 +177,7 @@ export function useWorkspace(): {
 			if (f && isHistoryMode(sessionView)) {
 				setSessionView(newSessionView());
 				setSessionNav({ siblings: [], currentIndex: -1 });
+				hasRestoredRef.current = false;
 				setActiveModels({ vision: null, copy: null });
 				window.history.replaceState({}, "", "/workspace");
 			}
@@ -263,7 +269,7 @@ export function useWorkspace(): {
 		[uploadState],
 	);
 
-	useSessionRestoration(restoreSession);
+	useSessionRestoration(restoreSession, hasRestoredRef);
 
 	// Navigation methods
 	const navigatePrev = useCallback(() => {
@@ -329,6 +335,7 @@ export function useWorkspace(): {
 		setSessionNav({ siblings: [], currentIndex: -1 });
 		setActiveModels({ vision: null, copy: null });
 		window.history.replaceState({}, "", "/workspace");
+		hasRestoredRef.current = false;
 	}, [uploadState]);
 
 	const handleDeleteSession = useCallback(

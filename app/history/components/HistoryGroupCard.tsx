@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useCallback } from "react";
+import { useState, useCallback, useRef } from "react";
 import { ChevronDown, ChevronRight, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -48,12 +48,14 @@ export function HistoryGroupCard({
 
 	const [isEditing, setIsEditing] = useState(false);
 	const [editValue, setEditValue] = useState("");
+	const intentionalBlurRef = useRef(false);
 
 	const displayTitle = groupTitle ?? "Artwork";
 	const truncatedTitle = displayTitle.length > 18 ? displayTitle.slice(0, 18) + "…" : displayTitle;
 
 	const handleStartEdit = useCallback(() => {
 		setEditValue(displayTitle);
+		intentionalBlurRef.current = false;
 		setIsEditing(true);
 	}, [displayTitle]);
 
@@ -61,10 +63,12 @@ export function HistoryGroupCard({
 		if (editValue.trim()) {
 			onUpdateGroupTitle(editValue.trim());
 		}
+		intentionalBlurRef.current = true;
 		setIsEditing(false);
 	}, [editValue, onUpdateGroupTitle]);
 
 	const handleCancel = useCallback(() => {
+		intentionalBlurRef.current = true;
 		setIsEditing(false);
 	}, []);
 
@@ -75,6 +79,12 @@ export function HistoryGroupCard({
 			handleCancel();
 		}
 	}, [handleSave, handleCancel]);
+
+	const handleBlur = useCallback(() => {
+		if (!intentionalBlurRef.current) {
+			handleCancel();
+		}
+	}, [handleCancel]);
 
 	// Sort sessions newest-first (latest at top)
 	const sortedSessions = [...sessions].sort((a, b) => b.createdAt - a.createdAt);
@@ -107,7 +117,7 @@ export function HistoryGroupCard({
 								autoFocus
 								value={editValue}
 								onChange={(e) => setEditValue(e.target.value)}
-								onBlur={handleSave}
+								onBlur={handleBlur}
 								onKeyDown={handleKeyDown}
 								className="text-sm font-medium bg-background border rounded px-2 py-0.5 w-48 focus:outline-none focus:ring-2 focus:ring-ring"
 							/>
