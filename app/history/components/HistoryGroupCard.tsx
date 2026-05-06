@@ -1,5 +1,6 @@
 "use client";
 
+import { useState, useCallback } from "react";
 import { ChevronDown, ChevronRight, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -14,6 +15,8 @@ interface HistoryGroupCardProps {
 	sessions: HistorySession[];
 	isExpanded: boolean;
 	expandedSessionId: string | null;
+	groupTitle: string | null;
+	onUpdateGroupTitle: (title: string) => void;
 	onToggleGroup: () => void;
 	onToggleSession: (id: string) => void;
 	onDeleteSession: (id: string) => void;
@@ -31,6 +34,8 @@ export function HistoryGroupCard({
 	sessions,
 	isExpanded,
 	expandedSessionId,
+	groupTitle,
+	onUpdateGroupTitle,
 	onToggleGroup,
 	onToggleSession,
 	onDeleteSession,
@@ -41,17 +46,52 @@ export function HistoryGroupCard({
 }: HistoryGroupCardProps) {
 	const groupId = imageHash ? `group-${imageHash}` : `group-solo-${sessions[0]?.id}`;
 
+	const [isEditing, setIsEditing] = useState(false);
+	const [editValue, setEditValue] = useState("");
+
+	const displayTitle = groupTitle ?? "Artwork";
+	const truncatedTitle = displayTitle.length > 18 ? displayTitle.slice(0, 18) + "…" : displayTitle;
+
+	const handleStartEdit = useCallback(() => {
+		setEditValue(displayTitle);
+		setIsEditing(true);
+	}, [displayTitle]);
+
+	const handleSave = useCallback(() => {
+		if (editValue.trim()) {
+			onUpdateGroupTitle(editValue.trim());
+		}
+		setIsEditing(false);
+	}, [editValue, onUpdateGroupTitle]);
+
+	const handleCancel = useCallback(() => {
+		setIsEditing(false);
+	}, []);
+
+	const handleKeyDown = useCallback((e: React.KeyboardEvent<HTMLInputElement>) => {
+		if (e.key === "Enter") {
+			handleSave();
+		} else if (e.key === "Escape") {
+			handleCancel();
+		}
+	}, [handleSave, handleCancel]);
+
+	// Sort sessions newest-first (latest at top)
+	const sortedSessions = [...sessions].sort((a, b) => b.createdAt - a.createdAt);
+
 	return (
 		<div id={groupId} className="border rounded-lg overflow-hidden bg-card">
-			<button
-				onClick={onToggleGroup}
-				className="w-full flex items-start gap-4 p-4 text-left hover:bg-accent/50 transition-colors"
-			>
-				{isExpanded ? (
-					<ChevronDown className="h-5 w-5 mt-1 text-muted-foreground shrink-0" />
-				) : (
-					<ChevronRight className="h-5 w-5 mt-1 text-muted-foreground shrink-0" />
-				)}
+			<div className="w-full flex items-start gap-4 p-4 hover:bg-accent/50 transition-colors">
+				<button
+					onClick={onToggleGroup}
+					className="shrink-0 mt-1 text-muted-foreground hover:text-foreground transition-colors"
+				>
+					{isExpanded ? (
+						<ChevronDown className="h-5 w-5" />
+					) : (
+						<ChevronRight className="h-5 w-5" />
+					)}
+				</button>
 				{thumbnail && (
 					// eslint-disable-next-line @next/next/no-img-element
 					<img
@@ -62,9 +102,24 @@ export function HistoryGroupCard({
 				)}
 				<div className="flex-1 min-w-0">
 					<div className="flex items-center gap-2 flex-wrap">
-						<span className="font-medium text-sm truncate">
-							{imageHash ? "Artwork" : "Session"}
-						</span>
+						{isEditing ? (
+							<input
+								autoFocus
+								value={editValue}
+								onChange={(e) => setEditValue(e.target.value)}
+								onBlur={handleSave}
+								onKeyDown={handleKeyDown}
+								className="text-sm font-medium bg-background border rounded px-2 py-0.5 w-48 focus:outline-none focus:ring-2 focus:ring-ring"
+							/>
+						) : (
+							<span
+								onDoubleClick={handleStartEdit}
+								title={displayTitle}
+								className="font-medium text-sm cursor-text select-none"
+							>
+								{truncatedTitle}
+							</span>
+						)}
 						<Badge variant="secondary" className="text-xs">
 							{sessionCount} {sessionCount === 1 ? "run" : "runs"}
 						</Badge>
@@ -73,14 +128,15 @@ export function HistoryGroupCard({
 						Latest: {new Date(latestDate).toLocaleString()}
 					</p>
 				</div>
-			</button>
+			</div>
 
 			{isExpanded && (
 				<div className="border-t">
-					{sessions.map((session, index) => (
+					{sortedSessions.map((session, i) => (
 						<HistorySessionRow
 							key={session.id}
 							session={session}
+							sessionIndex={sortedSessions.length - i}
 							isExpanded={expandedSessionId === session.id}
 							onToggle={() => onToggleSession(session.id)}
 							onDelete={() => onDeleteSession(session.id)}

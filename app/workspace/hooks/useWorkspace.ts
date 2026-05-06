@@ -46,6 +46,7 @@ export interface AnalysisGroup {
 	stopZoneAnalysis: () => void;
 	analysisLoading: boolean;
 	copyLoading: boolean;
+	visionModel: string | null;
 }
 
 export interface CopyGroup {
@@ -59,6 +60,7 @@ export interface CopyGroup {
 	copyText: (text: string) => void;
 	stopZoneCopy: () => void;
 	copyLoading: boolean;
+	copyModel: string | null;
 }
 
 export interface HistoryGroup {
@@ -126,8 +128,6 @@ function useSessionRestoration(
 			onRestore(session);
 		}
 
-		// Remove query param without reload
-		window.history.replaceState({}, "", "/workspace");
 	}, [onRestore]);
 }
 
@@ -152,6 +152,11 @@ export function useWorkspace(): {
 
 	const isHistory = isHistoryMode(sessionView);
 
+	const [activeModels, setActiveModels] = useState<{
+		vision: string | null;
+		copy: string | null;
+	}>({ vision: null, copy: null });
+
 	const [history, setHistory] = useState<HistorySession[]>(() => getSessions());
 
 	const loadHistory = useCallback(() => setHistory(getSessions()), []);
@@ -167,6 +172,8 @@ export function useWorkspace(): {
 			if (f && isHistoryMode(sessionView)) {
 				setSessionView(newSessionView());
 				setSessionNav({ siblings: [], currentIndex: -1 });
+				setActiveModels({ vision: null, copy: null });
+				window.history.replaceState({}, "", "/workspace");
 			}
 		},
 		[rawHandleFile, sessionView],
@@ -226,6 +233,10 @@ export function useWorkspace(): {
 			setStage("done");
 			setError(null);
 			setSessionView(viewHistory(session.id));
+			setActiveModels({
+				vision: session.visionModel ?? null,
+				copy: session.copyModel ?? null,
+			});
 			// Recompute nav for the new session
 			setSessionNav(buildSessionNav(session.id));
 			router.replace(`/workspace?session=${session.id}`, { scroll: false });
@@ -243,6 +254,10 @@ export function useWorkspace(): {
 			setStage("done");
 			setError(null);
 			setSessionView(viewHistory(session.id));
+			setActiveModels({
+				vision: session.visionModel ?? null,
+				copy: session.copyModel ?? null,
+			});
 			setSessionNav(buildSessionNav(session.id));
 		},
 		[uploadState],
@@ -312,6 +327,8 @@ export function useWorkspace(): {
 		setError(null);
 		setSessionView(newSessionView());
 		setSessionNav({ siblings: [], currentIndex: -1 });
+		setActiveModels({ vision: null, copy: null });
+		window.history.replaceState({}, "", "/workspace");
 	}, [uploadState]);
 
 	const handleDeleteSession = useCallback(
@@ -390,6 +407,7 @@ export function useWorkspace(): {
 			stopZoneAnalysis: pipeline.stopZoneAnalysis,
 			analysisLoading: pipeline.analysisLoading,
 			copyLoading: pipeline.copyLoading,
+			visionModel: activeModels.vision,
 		},
 		copy: {
 			displayCopy,
@@ -399,6 +417,7 @@ export function useWorkspace(): {
 			copyText,
 			stopZoneCopy: pipeline.stopZoneCopy,
 			copyLoading: pipeline.copyLoading,
+			copyModel: activeModels.copy,
 		},
 		history: {
 			history,

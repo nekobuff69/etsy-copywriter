@@ -18,6 +18,8 @@ export default function HistoryPage() {
 		openInWorkspace,
 		copyText,
 		copyAllForSession,
+		groupTitles,
+		updateGroupTitle,
 		hasHistory,
 	} = useHistory();
 
@@ -65,6 +67,8 @@ export default function HistoryPage() {
 							sessions={group.sessions}
 							isExpanded={expandedGroupHash === groupKey}
 							expandedSessionId={expandedSessionId}
+							groupTitle={groupTitles[groupKey] ?? null}
+							onUpdateGroupTitle={(title) => updateGroupTitle(groupKey, title)}
 							onToggleGroup={() => toggleGroup(groupKey)}
 							onToggleSession={toggleSession}
 							onDeleteSession={handleDeleteSession}

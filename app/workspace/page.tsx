@@ -86,6 +86,7 @@ export default function WorkspacePage() {
 						copyLoading={analysis.copyLoading}
 						isHistory={global.isHistory}
 						hasFile={!!upload.file}
+						visionModel={analysis.visionModel}
 					/>
 
 					<CopyZone
@@ -98,6 +99,7 @@ export default function WorkspacePage() {
 						copyLoading={copy.copyLoading}
 						isHistory={global.isHistory}
 						hasAnalysis={!!analysis.displayAnalysis}
+						copyModel={copy.copyModel}
 					/>
 				</div>
 

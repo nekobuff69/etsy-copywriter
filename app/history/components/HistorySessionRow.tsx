@@ -18,6 +18,7 @@ import { shortModelName } from "@/lib/display";
 
 interface HistorySessionRowProps {
 	session: HistorySession;
+	sessionIndex: number;
 	isExpanded: boolean;
 	onToggle: () => void;
 	onDelete: () => void;
@@ -28,6 +29,7 @@ interface HistorySessionRowProps {
 
 export function HistorySessionRow({
 	session,
+	sessionIndex,
 	isExpanded,
 	onToggle,
 	onDelete,
@@ -54,6 +56,10 @@ export function HistorySessionRow({
 				) : (
 					<ChevronRight className="h-4 w-4 text-muted-foreground shrink-0" />
 				)}
+
+				<span className="text-xs text-muted-foreground shrink-0 w-6">
+					#{sessionIndex}
+				</span>
 
 				<div className="flex items-center gap-2 flex-wrap flex-1 min-w-0">
 					<Badge variant="outline" className="text-xs">

@@ -12,6 +12,7 @@ import {
 	type HistorySession,
 	type ImageGroup,
 } from "@/lib/history";
+import { setGroupTitle } from "@/lib/group-titles";
 
 /**
  * Parse hash from URL, e.g. `#group-<key>/session-<id>` or `#group-<key>`.
@@ -39,6 +40,11 @@ export function useHistory() {
 	);
 	const [expandedGroupHash, setExpandedGroupHash] = useState<string | null>(null);
 	const [expandedSessionId, setExpandedSessionId] = useState<string | null>(null);
+	const [groupTitles, setGroupTitlesState] = useState<Record<string, string>>(() => {
+		if (typeof window === "undefined") return {};
+		const raw = localStorage.getItem("etsy-copywriter-group-titles");
+		return raw ? JSON.parse(raw) : {};
+	});
 
 	// Process hash on mount — auto-expand the group/session referenced
 	useEffect(() => {
@@ -126,6 +132,11 @@ export function useHistory() {
 		[copyText],
 	);
 
+	const updateGroupTitle = useCallback((key: string, title: string) => {
+		setGroupTitle(key || "", title);
+		setGroupTitlesState((prev) => ({ ...prev, [key || ""]: title }));
+	}, []);
+
 	return {
 		groups,
 		expandedGroupHash,
@@ -138,6 +149,8 @@ export function useHistory() {
 		openInWorkspace,
 		copyText,
 		copyAllForSession,
+		groupTitles,
+		updateGroupTitle,
 		hasHistory: groups.length > 0,
 	};
 }

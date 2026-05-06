@@ -1,4 +1,5 @@
-import type {ImageAnalysisType, CopyWritingType} from "./definitions";
+import type { ImageAnalysisType, CopyWritingType } from "./definitions";
+import { cleanupOrphanedGroupTitles } from "./group-titles";
 
 export interface HistorySession {
 	id: string;
@@ -154,6 +155,7 @@ export function groupSessionsByImage(
 export function deleteSession(id: string) {
 	const sessions = readSessions().filter((s) => s.id !== id);
 	writeSessions(sessions);
+	cleanupOrphanedGroupTitles(sessions);
 }
 
 /**
@@ -167,10 +169,12 @@ export function deleteSessions(ids: string[]): number {
 	const remaining = sessions.filter((s) => !idSet.has(s.id));
 	const deleted = before - remaining.length;
 	writeSessions(remaining);
+	cleanupOrphanedGroupTitles(remaining);
 	return deleted;
 }
 
 export function clearHistory() {
 	if (typeof window === "undefined") return;
 	localStorage.removeItem(STORAGE_KEY);
+	cleanupOrphanedGroupTitles([]);
 }

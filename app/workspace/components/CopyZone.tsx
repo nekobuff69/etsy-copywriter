@@ -22,6 +22,7 @@ interface CopyZoneProps {
 	copyLoading: boolean;
 	isHistory: boolean;
 	hasAnalysis: boolean;
+	copyModel?: string | null;
 }
 
 export function CopyZone({
@@ -34,6 +35,7 @@ export function CopyZone({
 	copyLoading,
 	isHistory,
 	hasAnalysis,
+	copyModel,
 }: CopyZoneProps) {
 	if (!displayCopy) {
 		return (
@@ -41,8 +43,8 @@ export function CopyZone({
 				<CardHeader>
 					<CardTitle className="text-base flex items-center gap-2">
 						Copy
-						<Badge variant="secondary" className="text-[10px] font-mono truncate max-w-[180px]">
-							Model Used: {shortModelName(getStoredSettings().copy.model)}
+						<Badge variant="secondary" className="text-[10px] font-mono truncate max-w-[180px] text-left justify-start">
+							✍️ {shortModelName(copyModel ?? getStoredSettings().copy.model)}
 						</Badge>
 					</CardTitle>
 				</CardHeader>
@@ -60,8 +62,8 @@ export function CopyZone({
 			<CardHeader>
 				<CardTitle className="text-base flex items-center gap-2">
 					Copy
-					<Badge variant="secondary" className="text-[10px] font-mono truncate max-w-[180px]">
-						Model Used: {shortModelName(getStoredSettings().copy.model)}
+					<Badge variant="secondary" className="text-[10px] font-mono truncate max-w-[180px] text-left justify-start">
+						✍️ {shortModelName(copyModel ?? getStoredSettings().copy.model)}
 					</Badge>
 				</CardTitle>
 			</CardHeader>
