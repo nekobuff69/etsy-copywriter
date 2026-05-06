@@ -16,6 +16,8 @@
 | **Analysis**  | Structured data describing an artwork (subject, style, colors, etc.)            | Description, metadata   |
 | **Copy**      | Etsy listing content: titles, tags, and description                             | Content, text, output   |
 | **Session**   | One complete run through the pipeline, saved to History                         | Entry, run, generation  |
+| **Session Nav** | prev/next buttons and "Session N of M" indicator in the workspace header when viewing history | Navigation, pagination |
+| **Back to Group** | Navigation action returning from a history session in the workspace to the History page, scrolled to the specific session row | Return, go back |
 | **Run All**   | The client-side action that runs the full pipeline (analysis → copy) by sequentially calling `/api/analyze-image` then `/api/generate-copy` | Full run, auto-generate |
 | **Streaming** | Progressive delivery of LLM output as partial objects                           | Live update, real-time  |
 
@@ -37,6 +39,8 @@
 | **Image Hash**  | A SHA-256 digest of the raw uploaded file bytes                       | Hash, fingerprint          |
 | **Image Group** | All Sessions that share the same Image Hash                           | Group, cluster, collection |
 | **Group Card**  | The UI element on History that represents one Image Group             | Card, tile                 |
+| **Group Title** | User-editable name for an Image Group, stored in separate localStorage key | Title, label         |
+| **Session Index** | Ascending number displayed per session row in a group (#1 = oldest, #N = newest) | Index, count     |
 | **Session Row** | A single Session entry inside an expanded Group Card                  | Row, item, entry           |
 | **Thumbnail**   | A compressed 200×200 JPEG preview stored with each Session            | Preview, image             |
 | **Restore**     | Loading a past Session from History back into the Workspace           | Open, load, bring back     |

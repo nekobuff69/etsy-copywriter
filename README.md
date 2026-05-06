@@ -15,8 +15,9 @@ AI-powered Etsy listing copywriter for artwork sellers. Upload an image, review/
    - 5–8 SEO tags (ranked by relevance)
    - Compelling product description
 4. **Run All** — One-click sequential pipeline (analyze → generate copy), orchestrated client-side via the two working streaming endpoints.
-5. **History** — Sessions auto-saved to localStorage (max 20, LRU eviction) with compressed thumbnails and timestamps. History sessions are read-only.
+5. **History** — Sessions auto-saved to localStorage (max 20, LRU eviction) with compressed thumbnails and timestamps. History sessions are read-only. Sessions are grouped by image hash; groups can be renamed via double-click.
 6. **Settings** — Per-session model selection (model, base URL, API key) with localStorage persistence.
+7. **Workspace History Mode** — Past sessions open read-only in the workspace with prev/next navigation, scroll-to-top on restore, and a "Back to Group" link that scrolls to the specific session row.
 
 ## Stack
 
@@ -56,20 +57,19 @@ app/
   globals.css                          # Tailwind 4 + CSS variables
   components/TopNav.tsx                # Top-level navigation
   workspace/
-    page.tsx                           # Layout shell wiring useWorkspace to zone components
+    page.tsx                           # Layout shell: 3-column header (title, nav, New Session) + zone components
     hooks/useWorkspace.ts              # Orchestrator: state, AI hooks, file lifecycle, history
     hooks/usePipeline.ts               # AI streaming: analyze, copy, runAll (client-side orchestration), stop, save
     hooks/useUpload.ts                 # File selection, preview, thumbnail generation
     components/UploadZone.tsx          # File drop, preview, Analyze / Run All / Stop buttons
     components/AnalysisZone.tsx        # Editable 4-section analysis form + Generate Copy / Stop
     components/CopyZone.tsx            # Titles, tags, description with per-field copy buttons
-    components/Header.tsx              # Title, read-only badge
     components/DebugPanel.tsx          # Collapsible debug: stage, loading, errors, raw JSON
   history/
     page.tsx                           # Dedicated history page
-    hooks/useHistory.ts                # History page data hook
-    components/HistoryGroupCard.tsx    # History group card component
-    components/HistorySessionRow.tsx   # Single history session row
+    hooks/useHistory.ts                # History page data hook, hash-based session scrolling
+    components/HistoryGroupCard.tsx    # History group card with editable title (double-click)
+    components/HistorySessionRow.tsx   # Single history session row with stable DOM id for hash targeting
   settings/
     page.tsx                           # Model settings page (baseURL, apiKey, model)
   api/
@@ -85,10 +85,12 @@ lib/
   getCopyWritings.ts                   # Copy pipeline: validate analysis → streamObject
   schemas.ts                           # Zod schemas (imageAnalysisSchema, copyWritingSchema)
   definitions.ts                       # TypeScript types inferred from schemas
-  history.ts                           # localStorage session manager (LRU @ 20)
+  history.ts                           # localStorage session manager (LRU @ 20, orphan cleanup via group-titles)
   session.ts                           # Session mode state machine (current vs history)
   file-utils.ts                        # File → base64 data URL + 200×200 JPEG thumbnail
-  file-hash.ts                         # Image content hashing
+  file-hash.ts                         # Image content hashing (SHA-256)
+  group-titles.ts                      # Editable group title storage (separate localStorage key)
+  display.ts                           # Model name shortening utility
   settings.ts                          # AppSettings model, encode/decode, localStorage
   useSettings.ts                       # Client settings hook
   llm-provider.ts                      # createProvider(OpenAI-compatible) factory
@@ -96,7 +98,8 @@ lib/
   utils.ts                             # cn() class merger (shadcn utility)
 tests/
   getImageAnalysis.test.ts             # Pipeline unit tests
-  history.test.ts                      # History manager tests
+  history.test.ts                      # History manager tests (incl. orphan cleanup, session index math)
+  group-titles.test.ts                 # Group title read/write/cleanup tests
   session.test.ts                      # Session mode state machine tests
   file-utils.test.ts                   # File conversion + thumbnail tests
 docs/
@@ -128,6 +131,18 @@ See [`docs/adr/`](docs/adr/):
 `streamObject` in ai v6 is deprecated and does not enforce the Zod schema on models that lack native structured output support (e.g., Qwen via OpenRouter). To force the correct JSON shape, both pipeline modules embed the full schema structure in the system prompt and pass `schemaName` / `schemaDescription`. Without this, the model returns flat JSON like `{"description":"..."}` instead of the required nested structure.
 
 **Important**: `streamObject().object` (the server-side `.object` promise) never resolves with Qwen/OpenRouter because the provider silently ignores `response_format: json_schema`. The `toTextStreamResponse()` path works fine — it streams raw JSON text that `useObject` progressively parses on the client. This is why the `/api/run-all` server-side endpoint was removed and Run All is now orchestrated client-side.
+
+### History session restoration
+The `?session=<id>` query parameter is **preserved** in the URL during history mode so page refresh restores the current session (US 10). The param is only cleared when the user starts a new session or drops a new file. The workspace auto-scrolls the main content to `scrollTop=0` on entering history mode.
+
+### Session navigation
+In history mode, the workspace header shows prev/next buttons, a "Session N of M" indicator, and a "Back to Group" button centered between the title and "New Session" action. "Back to Group" navigates to the History page scrolled to the specific session row within the expanded group card.
+
+### Group titles
+Image groups in the History page can be renamed by double-clicking the title. Titles are stored in a separate localStorage key (`etsy-copywriter-group-titles`) and survive session deletion. Orphaned titles (groups with zero sessions) are automatically cleaned up via `cleanupOrphanedGroupTitles()`. Display is capped at 18 characters with ellipsis; the full title is stored.
+
+### Session indices
+Within an expanded group card, sessions are displayed newest-first. Each session row shows an ascending index (#1 = oldest, #N = newest), computed as `totalSessions - visualPosition`.
 
 ### Client-side error handling
 Both `useObject` `onFinish` callbacks check the `error` property. If the model's output fails Zod validation (TypeValidationError), the error is surfaced to the user via a destructive alert banner instead of silently showing empty fields.

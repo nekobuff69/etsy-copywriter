@@ -5,7 +5,7 @@
 - `pnpm dev` — Next.js dev server on `http://localhost:3000`
 - `pnpm build` — production build
 - `pnpm lint` — ESLint (Next.js flat config)
-- `pnpm test` — Vitest (`tests/getImageAnalysis.test.ts`, `tests/history.test.ts`, `tests/session.test.ts`, `tests/file-utils.test.ts`, `tests/getCopyWritings.test.ts`, `tests/file-hash.test.ts`, `tests/settings.test.ts`, `tests/api-settings.test.ts`, `tests/llm-provider.test.ts`, `tests/history-duplicate-ids.test.ts`)
+- `pnpm test` — Vitest (`tests/getImageAnalysis.test.ts`, `tests/history.test.ts`, `tests/session.test.ts`, `tests/file-utils.test.ts`, `tests/getCopyWritings.test.ts`, `tests/file-hash.test.ts`, `tests/settings.test.ts`, `tests/api-settings.test.ts`, `tests/llm-provider.test.ts`, `tests/history-duplicate-ids.test.ts`, `tests/group-titles.test.ts`)
 
 ## Environment
 - Requires `OPENROUTER_API_KEY` in `.env`
@@ -19,12 +19,11 @@
 - Session history is managed via the `/history` page (grouped by image, expandable cards). Past sessions viewed in the workspace show a read-only banner.
 
 ### Workspace (`app/workspace/`)
-- **`hooks/useWorkspace.ts`** — single custom hook encapsulating all client state, `useObject` instances, file/thumbnail lifecycle, history CRUD, and action dispatch. Returns grouped interface `{upload, analysis, copy, history, global}` so `page.tsx` stays declarative.
+- **`hooks/useWorkspace.ts`** — single custom hook encapsulating all client state, `useObject` instances, file/thumbnail lifecycle, history CRUD, session nav computation, and action dispatch. Returns grouped interface `{upload, analysis, copy, history, global, sessionNav}` so `page.tsx` stays declarative.
+- The workspace sub-header (3-column layout: title/Read-only badge on left, session nav buttons centered, New Session on right) is rendered inline in `page.tsx`, not as a separate component.
 - **`components/UploadZone.tsx`** — file drop + preview, Analyze/Run All/Stop buttons.
-- **`components/AnalysisZone.tsx`** — editable analysis form (Core Attributes, Technical Specs, Visual Identity, Marketing Hooks) + Generate Copy / Regenerate / Stop.
-- **`components/CopyZone.tsx`** — titles, tags, description with per-field copy buttons + Copy All / Regenerate / Stop.
-- **`components/Header.tsx`** — title, history toggle, New Session, theme switcher.
-- **`components/HistorySidebar.tsx`** — session list with thumbnail, restore, delete, clear.
+- **`components/AnalysisZone.tsx`** — editable analysis form (Core Attributes, Technical Specs, Visual Identity, Marketing Hooks) + Generate Copy / Regenerate / Stop. Empty state badge shows `👁️ <short-model-name>`.
+- **`components/CopyZone.tsx`** — titles, tags, description with per-field copy buttons + Copy All / Regenerate / Stop. Badge shows `✍️ <short-model-name>`.
 
 ### API Routes (`app/api/`)
 - **`/api/analyze-image`** — POST FormData with `image` file → `streamObject` → `toTextStreamResponse()`
@@ -57,9 +56,15 @@
 ### History Manager (`lib/history.ts`)
 - localStorage-based session storage with LRU eviction at max 20 sessions
 - Interface: `getSessions`, `getSession`, `saveSession`, `deleteSession`, `clearHistory`
-- Each session stores: `id` (`crypto.randomUUID()`, fallback `${Date.now()}-${Math.random()}`), `thumbnail` (JPEG data URL), `analysis`, `copy`, `createdAt`
+- Each session stores: `id` (`crypto.randomUUID()`, fallback `${Date.now()}-${Math.random()}`), `thumbnail` (JPEG data URL), `analysis`, `copy`, `createdAt`, optional `imageHash`, `visionModel`, `copyModel`, `baseURL`, `providerLabel`
 - Sessions are grouped by `imageHash` on the History page (`app/history/`) into expandable `ImageGroup` cards
+- Deleting the last session in a group triggers `cleanupOrphanedGroupTitles()` to remove orphaned group titles
 - Thumbnails are compressed via `createThumbnail` before storage to avoid `QuotaExceededError`
+
+### Group Titles (`lib/group-titles.ts`)
+- Separate localStorage key (`etsy-copywriter-group-titles`) for editable image group titles
+- Interface: `getGroupTitle`, `setGroupTitle`, `getAllGroupTitles`, `cleanupOrphanedGroupTitles`
+- Solo sessions (no imageHash) use `solo-<sessionId>` as key
 
 ## Critical Gotchas
 
