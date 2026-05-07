@@ -16,13 +16,15 @@ AI-powered Etsy listing copywriter for artwork sellers. Upload an image, review/
    - Compelling product description
 4. **Run All** — One-click sequential pipeline (analyze → generate copy), orchestrated client-side via the two working streaming endpoints.
 5. **History** — Sessions auto-saved to localStorage (max 20, LRU eviction) with compressed thumbnails and timestamps. History sessions are read-only. Sessions are grouped by image hash; groups can be renamed via double-click.
-6. **Settings** — Per-session model selection (model, base URL, API key) with localStorage persistence.
-7. **Workspace History Mode** — Past sessions open read-only in the workspace with prev/next navigation, scroll-to-top on restore, and a "Back to Group" link that scrolls to the specific session row.
+6. **Settings** — Per-session model selection (model, base URL, API key) with localStorage persistence, plus a day/night theme toggle.
+7. **Dark Mode** — Full warm-dark palette (deep olive-black surfaces, muted sage accents) toggled via a sun/moon slider. Preference persists to `localStorage`.
+8. **Kami-Styled Toasts** — Sonner toasts styled with the Kami system: ivory cards, whisper shadows, sage left-border for success, terracotta for errors.
+9. **Workspace History Mode** — Past sessions open read-only in the workspace with prev/next navigation, scroll-to-top on restore, and a "Back to Group" link that scrolls to the specific session row.
 
 ## Stack
 
 - **Framework:** Next.js 16 (App Router)
-- **Styling:** Tailwind CSS 4 + shadcn/ui (New York style, CSS variables)
+- **Styling:** Tailwind CSS 4 + shadcn/ui (New York style, CSS variables) + Kami design system (warm parchment palette, serif typography, sage accent)
 - **AI SDK:** `ai` v6 + `@ai-sdk/react` v3 + `@ai-sdk/openai-compatible` v2
 - **Provider:** OpenRouter (OpenAI-compatible endpoint)
 - **Validation:** Zod v4
@@ -79,7 +81,8 @@ app/
 components/
   ui/                                  # shadcn components (button, card, textarea, etc.)
   theme-provider.tsx                   # next-themes wrapper
-  ThemeToggle.tsx                      # Dark/light mode toggle
+  ThemeToggle.tsx                      # Sun/moon slider toggle (no text label)
+  KamiToaster.tsx                      # Sonner wrapper with .kami-toast class
 lib/
   getImageAnalysis.ts                  # Vision pipeline: validate → base64 → streamObject
   getCopyWritings.ts                   # Copy pipeline: validate analysis → streamObject
@@ -115,6 +118,19 @@ pnpm test        # Vitest
 pnpm lint        # ESLint
 pnpm build       # Production build
 ```
+
+## Design System
+
+The UI follows the **Kami** (紙 / 纸) editorial design system:
+
+- **Palette:** Warm parchment background (`#f5f4ed`), ivory cards (`#faf9f5`), single sage accent (`#4A5D3F`)
+- **Typography:** Charter/Georgia serif everywhere; weight 500 is the ceiling (no bold/italic)
+- **Depth:** 1px rings and whisper shadows (`0 4px 24px rgba(0,0,0,0.05)`) — no hard drop shadows
+- **Tags/Pills:** Sage text on a blue-ish tinted background (`#E4ECF5` in light, `#2A3A24` in dark)
+- **Dark mode:** Warm dark surfaces (`#141413` background, `#1e1e1c` cards, `#8BA87A` sage accent)
+- **Toasts:** Sonner overrides in `globals.css` — ivory card, whisper shadow, 3px left-border accent (sage for success, terracotta for error)
+
+See [`docs/adr/009-kami-design-system.md`](docs/adr/009-kami-design-system.md) for the full rationale.
 
 ## Key Design Decisions
 

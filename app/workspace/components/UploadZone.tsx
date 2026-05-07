@@ -32,21 +32,20 @@ export function UploadZone({
 	const showHistoryPreview = isHistory && thumbnailUrl;
 
 	return (
-		<Card className={`h-[500px] flex flex-col ${showHistoryPreview ? "" : isHistory ? "opacity-60" : ""}`}>
-			<CardHeader>
-				<CardTitle className="text-base flex items-center gap-2">
-					<Upload className="h-4 w-4" />
+		<Card className={`h-[520px] flex flex-col ${showHistoryPreview ? "" : isHistory ? "opacity-60" : ""}`}>
+			<CardHeader className="pb-3 border-b border-border/60">
+				<CardTitle className="text-base font-medium flex items-center gap-2">
+					<Upload className="h-4 w-4 text-primary" />
 					Upload
 				</CardTitle>
 			</CardHeader>
-			<CardContent className="flex-1 overflow-hidden flex flex-col">
+			<CardContent className="flex-1 overflow-hidden flex flex-col pt-4">
 				{showHistoryPreview ? (
 					<div className="flex-1 flex flex-col items-center justify-center space-y-3">
-						{/* eslint-disable-next-line @next/next/no-img-element */}
 						<img
 							src={thumbnailUrl}
 							alt="Processed image preview"
-							className="mx-auto max-h-48 object-contain rounded"
+							className="mx-auto max-h-48 object-contain rounded-md"
 						/>
 						<p className="text-xs text-muted-foreground">Processed image preview</p>
 					</div>
@@ -57,24 +56,21 @@ export function UploadZone({
 								onDrop={onDrop}
 								onDragOver={(e) => e.preventDefault()}
 								onClick={() => !isHistory && fileInputRef.current?.click()}
-								className={`border-2 border-dashed border-border rounded-lg p-6 text-center transition-colors ${
+								className={`border-2 border-dashed border-border rounded-lg p-8 text-center transition-colors ${
 									isHistory
 										? "cursor-not-allowed bg-muted"
-										: "cursor-pointer hover:bg-accent/50"
+										: "cursor-pointer hover:bg-secondary/50"
 								}`}>
 								{previewUrl ? (
-									<>
-										{/* eslint-disable-next-line @next/next/no-img-element */}
-										<img
-											src={previewUrl}
-											alt="Preview"
-											className="mx-auto max-h-48 object-contain rounded"
-										/>
-									</>
+									<img
+										src={previewUrl}
+										alt="Preview"
+										className="mx-auto max-h-48 object-contain rounded-md"
+									/>
 								) : (
-									<div className="text-muted-foreground space-y-1">
+									<div className="text-muted-foreground space-y-2">
 										<Upload className="h-8 w-8 mx-auto" />
-										<p className="text-sm">Drag & drop or click to upload</p>
+										<p className="text-sm font-medium">Drag & drop or click to upload</p>
 										<p className="text-xs">jpg, png, webp, gif</p>
 									</div>
 								)}

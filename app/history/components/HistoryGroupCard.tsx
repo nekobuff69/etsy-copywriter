@@ -3,7 +3,7 @@
 import { useState, useCallback, useRef } from "react";
 import { ChevronDown, ChevronRight, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
+
 import type { HistorySession } from "@/lib/history";
 import { HistorySessionRow } from "./HistorySessionRow";
 
@@ -86,11 +86,10 @@ export function HistoryGroupCard({
 		}
 	}, [handleCancel]);
 
-	// Sort sessions newest-first (latest at top)
 	const sortedSessions = [...sessions].sort((a, b) => b.createdAt - a.createdAt);
 
 	return (
-		<div id={groupId} className="border rounded-lg overflow-hidden bg-card">
+		<div id={groupId} className="border border-border rounded-lg overflow-hidden bg-card">
 			<div className="w-full flex items-start gap-4 p-4 hover:bg-accent/50 transition-colors">
 				<button
 					onClick={onToggleGroup}
@@ -103,11 +102,10 @@ export function HistoryGroupCard({
 					)}
 				</button>
 				{thumbnail && (
-					// eslint-disable-next-line @next/next/no-img-element
 					<img
 						src={thumbnail}
 						alt="Image thumbnail"
-						className="w-16 h-16 object-cover rounded shrink-0"
+						className="w-16 h-16 object-cover rounded-md shrink-0"
 					/>
 				)}
 				<div className="flex-1 min-w-0">
@@ -119,7 +117,7 @@ export function HistoryGroupCard({
 								onChange={(e) => setEditValue(e.target.value)}
 								onBlur={handleBlur}
 								onKeyDown={handleKeyDown}
-								className="text-sm font-medium bg-background border rounded px-2 py-0.5 w-48 focus:outline-none focus:ring-2 focus:ring-ring"
+								className="text-sm font-medium bg-background border border-border rounded-md px-2 py-0.5 w-48 focus:outline-none focus:ring-1 focus:ring-ring"
 							/>
 						) : (
 							<span
@@ -129,19 +127,19 @@ export function HistoryGroupCard({
 							>
 								{truncatedTitle}
 							</span>
-						)}
-						<Badge variant="secondary" className="text-xs">
-							{sessionCount} {sessionCount === 1 ? "run" : "runs"}
-						</Badge>
+							)}
+							<span className="kami-tag">
+								{sessionCount} {sessionCount === 1 ? "run" : "runs"}
+							</span>
+						</div>
+						<p className="text-xs text-muted-foreground mt-1">
+							Latest: {new Date(latestDate).toLocaleString()}
+						</p>
 					</div>
-					<p className="text-xs text-muted-foreground mt-1">
-						Latest: {new Date(latestDate).toLocaleString()}
-					</p>
 				</div>
-			</div>
 
 			{isExpanded && (
-				<div className="border-t">
+				<div className="border-t border-border/60">
 					{sortedSessions.map((session, i) => (
 						<HistorySessionRow
 							key={session.id}

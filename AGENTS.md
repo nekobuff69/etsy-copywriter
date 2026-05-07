@@ -21,9 +21,12 @@
 ### Workspace (`app/workspace/`)
 - **`hooks/useWorkspace.ts`** — single custom hook encapsulating all client state, `useObject` instances, file/thumbnail lifecycle, history CRUD, session nav computation, and action dispatch. Returns grouped interface `{upload, analysis, copy, history, global, sessionNav}` so `page.tsx` stays declarative.
 - The workspace sub-header (3-column layout: title/Read-only badge on left, session nav buttons centered, New Session on right) is rendered inline in `page.tsx`, not as a separate component.
+- **Design system** — Kami (紙) editorial system: warm parchment background, ivory cards, sage (`#4A5D3F`) accent, Charter/Georgia serif stack. See `docs/adr/009-kami-design-system.md`.
 - **`components/UploadZone.tsx`** — file drop + preview, Analyze/Run All/Stop buttons.
 - **`components/AnalysisZone.tsx`** — editable analysis form (Core Attributes, Technical Specs, Visual Identity, Marketing Hooks) + Generate Copy / Regenerate / Stop. Empty state badge shows `👁️ <short-model-name>`.
 - **`components/CopyZone.tsx`** — titles, tags, description with per-field copy buttons + Copy All / Regenerate / Stop. Badge shows `✍️ <short-model-name>`.
+- **`components/ThemeToggle.tsx`** — Sun/moon slider toggle (64×32px, no text label, sliding ivory knob)
+- **`components/KamiToaster.tsx`** — Sonner wrapper applying `.kami-toast` class for Kami-styled toasts
 
 ### API Routes (`app/api/`)
 - **`/api/analyze-image`** — POST FormData with `image` file → `streamObject` → `toTextStreamResponse()`
@@ -87,11 +90,22 @@ Original `lib/getImageAnalysis.ts` and `lib/getCopyWritings.ts` had top-level in
 - Uses `@tailwindcss/postcss` plugin (not the legacy `tailwindcss` plugin).
 - VS Code CSS validation is disabled (`.vscode/settings.json`) because Tailwind 4 uses `@import "tailwindcss"` in CSS.
 
-### shadcn/ui
+### shadcn/ui + Kami overrides
 - Installed components: `button`, `textarea`, `input`, `card`, `label`, `badge`, `progress`, `alert`, `separator`, `sonner`
 - Configured (New York style, RSC, CSS variables) in `components.json`
 - Aliases: `@/components`, `@/lib`, `@/hooks`
 - `components.json` utils alias updated to `@/lib/utils` (was `@/app/lib/utils`)
+- **Kami overrides** in `globals.css`:
+  - shadcn CSS variables mapped to Kami tokens (e.g. `--background: #f5f4ed`, `--primary: #4A5D3F`)
+  - `.kami-tag` utility class: sage text on `#E4ECF5` background (light), `#2A3A24` (dark)
+  - Sonner toast overrides: ivory cards, whisper shadow, 3px left-border accent
+  - Body font forced to Charter/Georgia serif; weight 500 ceiling; no italic
+
+### Kami tag / pill styling
+Model name badges and run-count pills use `.kami-tag` (not shadcn `<Badge>`):
+- Light mode: sage (`var(--primary)`) text on `#E4ECF5` background
+- Dark mode: same sage text on `#2A3A24` background
+- Applied in: `AnalysisZone`, `CopyZone`, `HistoryGroupCard`, `HistorySessionRow`, `Header`, `workspace/page`
 
 ### Debug mechanics
 - Console logs tagged `[PIPELINE]` in `usePipeline.ts` (startAnalysis, startCopy) and `useWorkspace.ts` (stage transitions)

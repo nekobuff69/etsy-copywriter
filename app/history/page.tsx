@@ -24,11 +24,11 @@ export default function HistoryPage() {
 	} = useHistory();
 
 	return (
-		<div className="max-w-7xl mx-auto px-4 py-8">
+		<div className="max-w-3xl mx-auto px-6 py-10">
 			<div className="flex items-center justify-between mb-6">
 				<div>
-					<h1 className="text-2xl font-bold">History</h1>
-					<p className="text-muted-foreground text-sm">
+					<h1 className="text-2xl font-medium" style={{letterSpacing: "-0.02em"}}>History</h1>
+					<p className="text-muted-foreground text-sm mt-1">
 						Browse and compare past sessions grouped by image.
 					</p>
 				</div>

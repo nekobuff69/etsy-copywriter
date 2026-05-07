@@ -66,13 +66,15 @@ function LlmConfigCard({title, description, config, onChange}: LlmConfigCardProp
 
 	return (
 		<Card>
-			<CardHeader>
-				<CardTitle>{title}</CardTitle>
+			<CardHeader className="pb-3 border-b border-border/60">
+				<CardTitle className="text-base font-medium">{title}</CardTitle>
 				<CardDescription>{description}</CardDescription>
 			</CardHeader>
-			<CardContent className="space-y-4">
+			<CardContent className="space-y-4 pt-4">
 				<div className="space-y-2">
-					<Label htmlFor={`${title}-baseURL`}>Endpoint URL</Label>
+					<Label htmlFor={`${title}-baseURL`} className="text-xs font-medium text-muted-foreground uppercase tracking-[0.4px]">
+						Endpoint URL
+					</Label>
 					<Input
 						id={`${title}-baseURL`}
 						value={config.baseURL}
@@ -81,7 +83,9 @@ function LlmConfigCard({title, description, config, onChange}: LlmConfigCardProp
 					/>
 				</div>
 				<div className="space-y-2">
-					<Label htmlFor={`${title}-apiKey`}>API Key</Label>
+					<Label htmlFor={`${title}-apiKey`} className="text-xs font-medium text-muted-foreground uppercase tracking-[0.4px]">
+						API Key
+					</Label>
 					<Input
 						id={`${title}-apiKey`}
 						type="password"
@@ -91,7 +95,9 @@ function LlmConfigCard({title, description, config, onChange}: LlmConfigCardProp
 					/>
 				</div>
 				<div className="space-y-2">
-					<Label htmlFor={`${title}-model`}>Model ID</Label>
+					<Label htmlFor={`${title}-model`} className="text-xs font-medium text-muted-foreground uppercase tracking-[0.4px]">
+						Model ID
+					</Label>
 					<Input
 						id={`${title}-model`}
 						value={config.model}
@@ -166,8 +172,8 @@ export default function SettingsPage() {
 		<div className="min-h-screen bg-background text-foreground p-6">
 			<div className="max-w-4xl mx-auto space-y-8">
 				<div>
-					<h1 className="text-2xl font-bold">Settings</h1>
-					<p className="text-muted-foreground">
+					<h1 className="text-2xl font-medium" style={{letterSpacing: "-0.02em"}}>Settings</h1>
+					<p className="text-muted-foreground mt-1">
 						Configure your LLM endpoints and preferences.
 					</p>
 				</div>
@@ -187,7 +193,7 @@ export default function SettingsPage() {
 					/>
 				</div>
 
-				<div className="flex items-center gap-4">
+				<div className="flex items-center gap-6 pt-2">
 					<Button onClick={handleApply} disabled={!localSettings}>
 						Apply
 					</Button>
@@ -196,10 +202,9 @@ export default function SettingsPage() {
 					</Button>
 				</div>
 
-				<div className="border-t pt-6">
-					<h2 className="text-lg font-semibold mb-4">Appearance</h2>
+				<div className="border-t border-border/60 pt-8">
+					<h2 className="text-lg font-medium mb-4">Appearance</h2>
 					<div className="flex items-center gap-4">
-						<span className="text-sm text-muted-foreground">Theme</span>
 						<ThemeToggle />
 					</div>
 				</div>

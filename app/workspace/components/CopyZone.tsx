@@ -1,9 +1,8 @@
 import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
+
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Textarea } from "@/components/ui/textarea";
 import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import { ClipboardList, RefreshCw, Square, Copy } from "lucide-react";
 import type { CopyWritingType, ImageAnalysisType } from "@/lib/definitions";
 import { getStoredSettings } from "@/lib/settings";
@@ -39,13 +38,13 @@ export function CopyZone({
 }: CopyZoneProps) {
 	if (!displayCopy) {
 		return (
-			<Card className="h-[500px] flex flex-col">
-				<CardHeader>
-					<CardTitle className="text-base flex items-center gap-2">
+			<Card className="h-[520px] flex flex-col">
+				<CardHeader className="pb-3 border-b border-border/60">
+					<CardTitle className="text-base font-medium flex items-center gap-2">
 						Copy
-						<Badge variant="secondary" className="text-[10px] font-mono truncate max-w-[180px] text-left justify-start">
-							✍️ {shortModelName(copyModel ?? getStoredSettings().copy.model)}
-						</Badge>
+						<span className="kami-tag font-mono truncate max-w-[180px]">
+							{shortModelName(copyModel ?? getStoredSettings().copy.model)}
+						</span>
 					</CardTitle>
 				</CardHeader>
 				<CardContent className="flex-1 flex items-center justify-center">
@@ -58,21 +57,23 @@ export function CopyZone({
 	}
 
 	return (
-		<Card className="h-[500px] flex flex-col">
-			<CardHeader>
-				<CardTitle className="text-base flex items-center gap-2">
+		<Card className="h-[520px] flex flex-col">
+			<CardHeader className="pb-3 border-b border-border/60">
+				<CardTitle className="text-base font-medium flex items-center gap-2">
 					Copy
-					<Badge variant="secondary" className="text-[10px] font-mono truncate max-w-[180px] text-left justify-start">
-						✍️ {shortModelName(copyModel ?? getStoredSettings().copy.model)}
-					</Badge>
+					<span className="kami-tag font-mono truncate max-w-[180px]">
+						{shortModelName(copyModel ?? getStoredSettings().copy.model)}
+					</span>
 				</CardTitle>
 			</CardHeader>
-			<CardContent className="flex-1 overflow-hidden flex flex-col">
+			<CardContent className="flex-1 overflow-hidden flex flex-col pt-4">
 				<div className="flex-1 overflow-y-auto space-y-4 pr-1">
 					<div className="space-y-2">
 						{(["option1", "option2", "option3"] as const).map((opt, i) => (
 							<div key={opt}>
-								<Label className="text-xs">Title {i + 1}</Label>
+								<label className="block text-xs font-medium text-muted-foreground uppercase tracking-[0.4px] mb-1">
+									Title {i + 1}
+								</label>
 								<div className="flex gap-2 mt-1">
 									<Input
 										value={displayCopy.titles?.[opt] ?? ""}
@@ -99,7 +100,9 @@ export function CopyZone({
 					</div>
 
 					<div>
-						<Label className="text-xs">Tags</Label>
+						<label className="block text-xs font-medium text-muted-foreground uppercase tracking-[0.4px] mb-1">
+							Tags
+						</label>
 						<div className="flex gap-2 mt-1">
 							<Textarea
 								value={(displayCopy.tags ?? []).join(", ")}
@@ -123,7 +126,9 @@ export function CopyZone({
 					</div>
 
 					<div>
-						<Label className="text-xs">Description</Label>
+						<label className="block text-xs font-medium text-muted-foreground uppercase tracking-[0.4px] mb-1">
+							Description
+						</label>
 						<div className="flex gap-2 mt-1">
 							<Textarea
 								value={displayCopy.description ?? ""}
@@ -142,7 +147,7 @@ export function CopyZone({
 					</div>
 				</div>
 
-				<div className="flex flex-wrap gap-2 pt-4 flex-shrink-0">
+				<div className="flex flex-wrap gap-2 pt-4 flex-shrink-0 border-t border-border/60 mt-2">
 					<Button onClick={onCopyAll} size="sm">
 						<ClipboardList className="h-4 w-4 mr-1" />
 						Copy All

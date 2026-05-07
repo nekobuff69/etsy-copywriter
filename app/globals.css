@@ -42,75 +42,92 @@
 	--color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
 	--color-sidebar-border: var(--sidebar-border);
 	--color-sidebar-ring: var(--sidebar-ring);
+	/* Kami custom tokens */
+	--color-kami-parchment: #f5f4ed;
+	--color-kami-ivory: #faf9f5;
+	--color-kami-warm-sand: #e8e6dc;
+	--color-kami-border-soft: #e5e3d8;
+	--color-kami-near-black: #141413;
+	--color-kami-dark-warm: #3d3d3a;
+	--color-kami-olive: #504e49;
+	--color-kami-stone: #6b6a64;
+	--color-kami-sage: #4A5D3F;
+	--color-kami-sage-light: #7A8B6E;
+	--color-kami-tag: #E4ECF5;
+	--color-kami-destructive: #8B5A3C;
+	--font-serif: Charter, Georgia, Palatino, "Times New Roman", serif;
+	--font-mono: "JetBrains Mono", "SF Mono", "Fira Code", Consolas, Monaco, monospace;
 }
 
 :root {
-	--radius: 0.625rem;
-	--background: oklch(1 0 0);
-	--foreground: oklch(0.145 0 0);
-	--card: oklch(1 0 0);
-	--card-foreground: oklch(0.145 0 0);
-	--popover: oklch(1 0 0);
-	--popover-foreground: oklch(0.145 0 0);
-	--primary: oklch(0.205 0 0);
-	--primary-foreground: oklch(0.985 0 0);
-	--secondary: oklch(0.97 0 0);
-	--secondary-foreground: oklch(0.205 0 0);
-	--muted: oklch(0.97 0 0);
-	--muted-foreground: oklch(0.556 0 0);
-	--accent: oklch(0.97 0 0);
-	--accent-foreground: oklch(0.205 0 0);
-	--destructive: oklch(0.577 0.245 27.325);
-	--border: oklch(0.922 0 0);
-	--input: oklch(0.922 0 0);
-	--ring: oklch(0.708 0 0);
-	--chart-1: oklch(0.646 0.222 41.116);
-	--chart-2: oklch(0.6 0.118 184.704);
-	--chart-3: oklch(0.398 0.07 227.392);
-	--chart-4: oklch(0.828 0.189 84.429);
-	--chart-5: oklch(0.769 0.188 70.08);
-	--sidebar: oklch(0.985 0 0);
-	--sidebar-foreground: oklch(0.145 0 0);
-	--sidebar-primary: oklch(0.205 0 0);
-	--sidebar-primary-foreground: oklch(0.985 0 0);
-	--sidebar-accent: oklch(0.97 0 0);
-	--sidebar-accent-foreground: oklch(0.205 0 0);
-	--sidebar-border: oklch(0.922 0 0);
-	--sidebar-ring: oklch(0.708 0 0);
+	--radius: 0.5rem;
+	/* Kami Light Mode — mapped to shadcn tokens */
+	--background: #f5f4ed;
+	--foreground: #141413;
+	--card: #faf9f5;
+	--card-foreground: #141413;
+	--popover: #faf9f5;
+	--popover-foreground: #141413;
+	--primary: #4A5D3F;
+	--primary-foreground: #faf9f5;
+	--secondary: #e8e6dc;
+	--secondary-foreground: #3d3d3a;
+	--muted: #e8e6dc;
+	--muted-foreground: #504e49;
+	--accent: #e8e6dc;
+	--accent-foreground: #141413;
+	--destructive: #8B5A3C;
+	--border: #e5e3d8;
+	--input: #e8e6dc;
+	--ring: #4A5D3F;
+	--chart-1: #4A5D3F;
+	--chart-2: #7A8B6E;
+	--chart-3: #504e49;
+	--chart-4: #8B5A3C;
+	--chart-5: #6b6a64;
+	--sidebar: #faf9f5;
+	--sidebar-foreground: #141413;
+	--sidebar-primary: #4A5D3F;
+	--sidebar-primary-foreground: #faf9f5;
+	--sidebar-accent: #e8e6dc;
+	--sidebar-accent-foreground: #141413;
+	--sidebar-border: #e5e3d8;
+	--sidebar-ring: #4A5D3F;
 }
 
 .dark {
-	--background: oklch(0.145 0 0);
-	--foreground: oklch(0.985 0 0);
-	--card: oklch(0.205 0 0);
-	--card-foreground: oklch(0.985 0 0);
-	--popover: oklch(0.205 0 0);
-	--popover-foreground: oklch(0.985 0 0);
-	--primary: oklch(0.922 0 0);
-	--primary-foreground: oklch(0.205 0 0);
-	--secondary: oklch(0.269 0 0);
-	--secondary-foreground: oklch(0.985 0 0);
-	--muted: oklch(0.269 0 0);
-	--muted-foreground: oklch(0.708 0 0);
-	--accent: oklch(0.269 0 0);
-	--accent-foreground: oklch(0.985 0 0);
-	--destructive: oklch(0.704 0.191 22.216);
-	--border: oklch(1 0 0 / 10%);
-	--input: oklch(1 0 0 / 15%);
-	--ring: oklch(0.556 0 0);
-	--chart-1: oklch(0.488 0.243 264.376);
-	--chart-2: oklch(0.696 0.17 162.48);
-	--chart-3: oklch(0.769 0.188 70.08);
-	--chart-4: oklch(0.627 0.265 303.9);
-	--chart-5: oklch(0.645 0.246 16.439);
-	--sidebar: oklch(0.205 0 0);
-	--sidebar-foreground: oklch(0.985 0 0);
-	--sidebar-primary: oklch(0.488 0.243 264.376);
-	--sidebar-primary-foreground: oklch(0.985 0 0);
-	--sidebar-accent: oklch(0.269 0 0);
-	--sidebar-accent-foreground: oklch(0.985 0 0);
-	--sidebar-border: oklch(1 0 0 / 10%);
-	--sidebar-ring: oklch(0.556 0 0);
+	/* Kami Dark Mode — warm dark surfaces */
+	--background: #141413;
+	--foreground: #f0efe8;
+	--card: #1e1e1c;
+	--card-foreground: #f0efe8;
+	--popover: #1e1e1c;
+	--popover-foreground: #f0efe8;
+	--primary: #8BA87A;
+	--primary-foreground: #141413;
+	--secondary: #2a2a28;
+	--secondary-foreground: #d8d6cc;
+	--muted: #2a2a28;
+	--muted-foreground: #a8a59a;
+	--accent: #2a2a28;
+	--accent-foreground: #f0efe8;
+	--destructive: #c4906e;
+	--border: #353532;
+	--input: #2a2a28;
+	--ring: #8BA87A;
+	--chart-1: #8BA87A;
+	--chart-2: #A8C498;
+	--chart-3: #a8a59a;
+	--chart-4: #c4906e;
+	--chart-5: #8a877d;
+	--sidebar: #1e1e1c;
+	--sidebar-foreground: #f0efe8;
+	--sidebar-primary: #8BA87A;
+	--sidebar-primary-foreground: #141413;
+	--sidebar-accent: #2a2a28;
+	--sidebar-accent-foreground: #f0efe8;
+	--sidebar-border: #353532;
+	--sidebar-ring: #8BA87A;
 }
 
 @layer base {
@@ -119,11 +136,121 @@
 	}
 	body {
 		@apply bg-background text-foreground;
+		font-family: Charter, Georgia, Palatino, "Times New Roman", serif;
+		line-height: 1.55;
+		font-weight: 400;
+		-webkit-font-smoothing: antialiased;
+		-moz-osx-font-smoothing: grayscale;
+	}
+	strong, b {
+		font-weight: 500;
+	}
+	em, i {
+		font-style: normal;
+		color: var(--primary);
 	}
 }
 
 @layer components {
-	.pill-sm {
-		@apply h-10 w-full flex justify-center bg-chart-1 rounded-xl items-center;
+	.kami-section-label {
+		@apply text-xs font-medium text-primary uppercase tracking-[0.4px] mb-2;
 	}
+	.kami-field-label {
+		@apply block text-xs font-medium text-muted-foreground uppercase tracking-[0.4px] mb-1;
+	}
+	.kami-card {
+		@apply bg-card border border-border rounded-lg p-6;
+	}
+
+	/* Kami tag / pill — sage text on blue-ish background */
+	.kami-tag {
+		font-weight: 500;
+		font-size: 12px;
+		line-height: 1;
+		padding: 2px 8px;
+		border-radius: 4px;
+		color: var(--primary);
+		background: #E4ECF5;
+		letter-spacing: 0.4px;
+		display: inline-flex;
+		align-items: center;
+	}
+
+	.dark .kami-tag {
+		background: #2A3A24;
+	}
+}
+
+/* ── Sonner Toast — Kami Design System Overrides ── */
+
+/* Base toast container */
+[data-sonner-toast] {
+	font-family: var(--font-serif) !important;
+	background: var(--card) !important;
+	border: 1px solid var(--border) !important;
+	border-radius: 8px !important;
+	box-shadow: 0 4px 24px rgba(0, 0, 0, 0.05) !important;
+	color: var(--foreground) !important;
+	padding: 14px 18px !important;
+	line-height: 1.45 !important;
+}
+
+/* Success toast — sage left accent */
+[data-sonner-toast][data-type="success"] {
+	border-inline-start: 3px solid var(--primary) !important;
+}
+
+/* Error toast — warm terracotta left accent */
+[data-sonner-toast][data-type="error"] {
+	border-inline-start: 3px solid var(--destructive) !important;
+}
+
+/* Toast title */
+[data-sonner-toast] [data-title] {
+	font-weight: 500 !important;
+	font-size: 14px !important;
+	color: var(--foreground) !important;
+}
+
+/* Toast description */
+[data-sonner-toast] [data-description] {
+	font-size: 13px !important;
+	color: var(--muted-foreground) !important;
+}
+
+/* Close button */
+[data-sonner-toast] [data-close-button] {
+	background: var(--secondary) !important;
+	border: 1px solid var(--border) !important;
+	color: var(--muted-foreground) !important;
+	border-radius: 6px !important;
+	top: 8px !important;
+	inset-inline-end: 8px !important;
+	left: auto !important;
+	right: 8px !important;
+	transition: background 0.15s, color 0.15s !important;
+}
+
+[data-sonner-toast] [data-close-button]:hover {
+	background: var(--border) !important;
+	color: var(--foreground) !important;
+}
+
+/* Icon wrappers */
+[data-sonner-toast] [data-icon] {
+	color: var(--primary) !important;
+}
+
+[data-sonner-toast][data-type="error"] [data-icon] {
+	color: var(--destructive) !important;
+}
+
+/* Progress bar */
+[data-sonner-toast] [data-sonner-toast=""] > div:last-child {
+	background: var(--primary) !important;
+}
+
+/* Dark mode toast shadow */
+.dark [data-sonner-toast] {
+	box-shadow: 0 4px 24px rgba(0, 0, 0, 0.25) !important;
 }

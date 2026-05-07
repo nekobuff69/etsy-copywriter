@@ -7,16 +7,14 @@ import { AnalysisZone } from "./components/AnalysisZone";
 import { CopyZone } from "./components/CopyZone";
 import { DebugPanel } from "./components/DebugPanel";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import { Progress } from "@/components/ui/progress";
 import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
-import { Plus, RefreshCw, ChevronLeft, ChevronRight, ArrowLeft } from "lucide-react";
+
+import { Plus, ChevronLeft, ChevronRight, ArrowLeft } from "lucide-react";
 
 export default function WorkspacePage() {
 	const { upload, analysis, copy, history, global, sessionNav } = useWorkspace();
 	const mainRef = useRef<HTMLDivElement>(null);
 
-	// Scroll to top whenever entering history mode
 	useEffect(() => {
 		if (global.isHistory && mainRef.current) {
 			mainRef.current.scrollTop = 0;
@@ -25,17 +23,16 @@ export default function WorkspacePage() {
 
 	return (
 		<div className="min-h-screen bg-background text-foreground">
-			{/* Sub-header: 3-col in history mode, title+button in normal mode */}
-			<div className="border-b px-4 py-2 flex items-center">
-				{/* Left column: title + badge + New Session (normal mode) */}
+			{/* Sub-header */}
+			<div className="border-b px-6 py-2.5 flex items-center bg-card">
 				<div className="flex-1 flex items-center gap-3">
-					<h1 className="text-lg font-semibold">
+					<h1 className="text-lg font-medium">
 						{global.isHistory ? "History Session" : "Workspace"}
 					</h1>
 					{global.isHistory ? (
-						<Badge variant="secondary" className="text-xs">
+						<span className="kami-tag">
 							Read-only
-						</Badge>
+						</span>
 					) : (
 						<Button variant="outline" size="sm" onClick={history.startNewSession}>
 							<Plus className="h-4 w-4 mr-1" />
@@ -44,7 +41,6 @@ export default function WorkspacePage() {
 					)}
 				</div>
 
-				{/* Center column: session nav (history mode only) */}
 				{global.isHistory && sessionNav && (
 					<div className="flex-1 flex justify-center items-center gap-2">
 						<Button
@@ -79,7 +75,6 @@ export default function WorkspacePage() {
 					</div>
 				)}
 
-				{/* Right column: spacer (normal) or New Session (history) */}
 				<div className="flex-1 flex justify-end">
 					{global.isHistory && (
 						<Button variant="outline" size="sm" onClick={history.startNewSession}>
@@ -90,7 +85,7 @@ export default function WorkspacePage() {
 				</div>
 			</div>
 
-			<main ref={mainRef} className="flex-1 p-4 overflow-y-auto h-[calc(100vh-110px)]">
+			<main ref={mainRef} className="flex-1 p-6 overflow-y-auto h-[calc(100vh-110px)]">
 				{global.error && (
 					<Alert variant="destructive" className="mb-4">
 						<AlertDescription>{global.error}</AlertDescription>
@@ -102,31 +97,34 @@ export default function WorkspacePage() {
 						<div className="flex items-center gap-2 text-sm text-muted-foreground">
 							{global.stage === "analyzing" && (
 								<>
-									<RefreshCw className="h-4 w-4 animate-spin" />
+									<div className="w-4 h-4 border-2 border-muted-foreground/30 border-t-primary rounded-full animate-spin" />
 									Analyzing image...
 								</>
 							)}
 							{global.stage === "generating" && (
 								<>
-									<RefreshCw className="h-4 w-4 animate-spin" />
+									<div className="w-4 h-4 border-2 border-muted-foreground/30 border-t-primary rounded-full animate-spin" />
 									Generating copy...
 								</>
 							)}
 						</div>
-						<Progress
-							value={
-								global.stage === "analyzing"
-									? 33
-									: global.stage === "generating"
-										? 66
-										: 100
-							}
-							className="h-2"
-						/>
+						<div className="h-2 bg-muted rounded-full overflow-hidden">
+							<div
+								className="h-full bg-primary transition-all duration-300"
+								style={{
+									width:
+										global.stage === "analyzing"
+											? "33%"
+											: global.stage === "generating"
+												? "66%"
+												: "100%",
+								}}
+							/>
+						</div>
 					</div>
 				)}
 
-				<div className="grid grid-cols-1 xl:grid-cols-3 gap-4">
+				<div className="grid grid-cols-1 xl:grid-cols-3 gap-5">
 					<UploadZone
 						file={upload.file}
 						previewUrl={upload.previewUrl}

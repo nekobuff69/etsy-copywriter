@@ -11,7 +11,7 @@ import {
 	Trash2,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
+
 import { Separator } from "@/components/ui/separator";
 import type { HistorySession } from "@/lib/history";
 import { shortModelName } from "@/lib/display";
@@ -45,8 +45,7 @@ export function HistorySessionRow({
 	const copyModel = session.copyModel ?? "default";
 
 	return (
-		<div id={`session-${session.id}`} className="border-b last:border-b-0">
-			{/* Session header row */}
+		<div id={`session-${session.id}`} className="border-b border-border/40 last:border-b-0">
 			<button
 				onClick={onToggle}
 				className="w-full flex items-center gap-3 p-3 text-left hover:bg-accent/30 transition-colors"
@@ -56,33 +55,29 @@ export function HistorySessionRow({
 				) : (
 					<ChevronRight className="h-4 w-4 text-muted-foreground shrink-0" />
 				)}
-
 				<span className="text-xs text-muted-foreground shrink-0 w-6">
 					#{sessionIndex}
 				</span>
-
 				<div className="flex items-center gap-2 flex-wrap flex-1 min-w-0">
-					<Badge variant="outline" className="text-xs">
-						👁️ {shortModelName(visionModel)}
-					</Badge>
-					<Badge variant="outline" className="text-xs">
-						✍️ {shortModelName(copyModel)}
-					</Badge>
-					<Badge variant="secondary" className="text-xs">
+					<span className="kami-tag font-mono">
+						{shortModelName(visionModel)}
+					</span>
+					<span className="kami-tag font-mono">
+						{shortModelName(copyModel)}
+					</span>
+					<span className="kami-tag">
 						{providerLabel}
-					</Badge>
+					</span>
 					<span className="text-xs text-muted-foreground ml-auto">
 						{new Date(createdAt).toLocaleString()}
 					</span>
 				</div>
 			</button>
 
-			{/* Expanded session details */}
 			{isExpanded && (
 				<div className="px-3 pb-3 space-y-3">
 					<Separator />
 
-					{/* Copy-writings section */}
 					<div className="space-y-3">
 						<div className="flex items-center justify-between">
 							<h4 className="text-sm font-medium">Generated Copy</h4>
@@ -117,7 +112,6 @@ export function HistorySessionRow({
 							</div>
 						</div>
 
-						{/* Titles */}
 						{copy?.titles && (
 							<div className="space-y-1">
 								<div className="flex items-center justify-between">
@@ -131,7 +125,7 @@ export function HistorySessionRow({
 									return (
 										<div
 											key={key}
-											className="flex items-center gap-2 bg-muted/50 rounded px-2 py-1.5"
+											className="flex items-center gap-2 bg-muted/50 rounded-md px-2 py-1.5"
 										>
 											<span className="text-xs text-muted-foreground shrink-0 w-6">
 												#{key.replace("option", "")}
@@ -150,11 +144,10 @@ export function HistorySessionRow({
 											</Button>
 										</div>
 									);
-								})}
+									})}
 							</div>
 						)}
 
-						{/* Tags */}
 						{copy?.tags && copy.tags.length > 0 && (
 							<div className="space-y-1">
 								<div className="flex items-center justify-between">
@@ -173,15 +166,14 @@ export function HistorySessionRow({
 								</div>
 								<div className="flex flex-wrap gap-1">
 									{copy.tags.map((tag, i) => (
-										<Badge key={i} variant="secondary" className="text-xs">
+										<span key={i} className="kami-tag">
 											{tag}
-										</Badge>
+										</span>
 									))}
 								</div>
 							</div>
 						)}
 
-						{/* Description */}
 						{copy?.description && (
 							<div className="space-y-1">
 								<div className="flex items-center justify-between">
@@ -198,7 +190,7 @@ export function HistorySessionRow({
 										Copy
 									</Button>
 								</div>
-								<p className="text-sm text-muted-foreground whitespace-pre-wrap bg-muted/50 rounded p-3 max-h-48 overflow-y-auto">
+								<p className="text-sm text-muted-foreground whitespace-pre-wrap bg-muted/50 rounded-md p-3 max-h-48 overflow-y-auto">
 									{copy.description}
 								</p>
 							</div>
@@ -207,7 +199,6 @@ export function HistorySessionRow({
 
 					<Separator />
 
-					{/* Analysis section (collapsible, hidden by default) */}
 					<div>
 						<button
 							onClick={() => setAnalysisOpen(!analysisOpen)}
@@ -223,7 +214,7 @@ export function HistorySessionRow({
 						</button>
 
 						{analysisOpen && analysis && (
-							<div className="mt-2 space-y-2 bg-muted/50 rounded p-3 text-sm">
+							<div className="mt-2 space-y-2 bg-muted/50 rounded-md p-3 text-sm">
 								{analysis.core_attributes && (
 									<div>
 										<span className="font-medium">Subject: </span>
@@ -256,5 +247,3 @@ export function HistorySessionRow({
 		</div>
 	);
 }
-
-

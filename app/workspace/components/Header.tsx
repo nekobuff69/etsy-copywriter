@@ -1,5 +1,5 @@
 import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
+
 import { ChevronLeft, ChevronRight, ArrowLeft } from "lucide-react";
 
 interface SessionNav {
@@ -23,9 +23,9 @@ export function Header({ isHistory, sessionNav }: HeaderProps) {
 					{isHistory ? "History Session" : "Workspace"}
 				</h1>
 				{isHistory && (
-					<Badge variant="secondary" className="text-xs">
+					<span className="kami-tag">
 						Read-only
-					</Badge>
+					</span>
 				)}
 			</div>
 

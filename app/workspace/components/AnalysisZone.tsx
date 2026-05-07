@@ -1,10 +1,9 @@
 import type { ReactNode } from "react";
 import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
+
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Textarea } from "@/components/ui/textarea";
 import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import { ClipboardList, RefreshCw, Square } from "lucide-react";
 import type { ImageAnalysisType } from "@/lib/definitions";
 import { getStoredSettings } from "@/lib/settings";
@@ -30,7 +29,7 @@ interface AnalysisZoneProps {
 function Section({ children, title }: { children: ReactNode; title: string }) {
 	return (
 		<div>
-			<h3 className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-2">
+			<h3 className="text-xs font-medium text-primary uppercase tracking-[0.4px] mb-2">
 				{title}
 			</h3>
 			<div className="space-y-2">{children}</div>
@@ -41,8 +40,10 @@ function Section({ children, title }: { children: ReactNode; title: string }) {
 function Field({ children, label }: { children: ReactNode; label: string }) {
 	return (
 		<div>
-			<Label className="text-xs">{label}</Label>
-			<div className="mt-1">{children}</div>
+			<label className="block text-xs font-medium text-muted-foreground uppercase tracking-[0.4px] mb-1">
+				{label}
+			</label>
+			{children}
 		</div>
 	);
 }
@@ -61,13 +62,13 @@ export function AnalysisZone({
 }: AnalysisZoneProps) {
 	if (!displayAnalysis) {
 		return (
-			<Card className="h-[500px] flex flex-col">
-				<CardHeader>
-					<CardTitle className="text-base flex items-center gap-2">
+			<Card className="h-[520px] flex flex-col">
+				<CardHeader className="pb-3 border-b border-border/60">
+					<CardTitle className="text-base font-medium flex items-center gap-2">
 						Analysis
-						<Badge variant="secondary" className="text-[10px] font-mono truncate max-w-[180px] text-left justify-start">
-							👁️ {shortModelName(getStoredSettings().vision.model)}
-						</Badge>
+						<span className="kami-tag font-mono truncate max-w-[180px]">
+							{shortModelName(getStoredSettings().vision.model)}
+						</span>
 					</CardTitle>
 				</CardHeader>
 				<CardContent className="flex-1 flex items-center justify-center">
@@ -80,17 +81,17 @@ export function AnalysisZone({
 	}
 
 	return (
-		<Card className="h-[500px] flex flex-col">
-			<CardHeader>
-				<CardTitle className="text-base flex items-center gap-2">
+		<Card className="h-[520px] flex flex-col">
+			<CardHeader className="pb-3 border-b border-border/60">
+				<CardTitle className="text-base font-medium flex items-center gap-2">
 					Analysis
-					<Badge variant="secondary" className="text-[10px] font-mono truncate max-w-[180px] text-left justify-start">
-						👁️ {shortModelName(visionModel ?? getStoredSettings().vision.model)}
-					</Badge>
+					<span className="kami-tag font-mono truncate max-w-[180px]">
+						{shortModelName(visionModel ?? getStoredSettings().vision.model)}
+					</span>
 				</CardTitle>
 			</CardHeader>
-			<CardContent className="flex-1 overflow-hidden flex flex-col">
-				<div className="flex-1 overflow-y-auto space-y-3 pr-1">
+			<CardContent className="flex-1 overflow-hidden flex flex-col pt-4">
+				<div className="flex-1 overflow-y-auto space-y-4 pr-1">
 					<Section title="Core Attributes">
 						<Field label="Subject">
 							<Textarea
@@ -271,7 +272,7 @@ export function AnalysisZone({
 					</Section>
 				</div>
 
-				<div className="flex flex-wrap gap-2 pt-4 flex-shrink-0">
+				<div className="flex flex-wrap gap-2 pt-4 flex-shrink-0 border-t border-border/60 mt-2">
 					<Button
 						onClick={() => onGenerateCopy()}
 						disabled={copyLoading || !displayAnalysis || isHistory}
