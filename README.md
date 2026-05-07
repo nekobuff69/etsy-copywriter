@@ -128,34 +128,43 @@ See [`docs/adr/`](docs/adr/):
 ## Important Notes
 
 ### `streamObject` schema enforcement
+
 `streamObject` in ai v6 is deprecated and does not enforce the Zod schema on models that lack native structured output support (e.g., Qwen via OpenRouter). To force the correct JSON shape, both pipeline modules embed the full schema structure in the system prompt and pass `schemaName` / `schemaDescription`. Without this, the model returns flat JSON like `{"description":"..."}` instead of the required nested structure.
 
 **Important**: `streamObject().object` (the server-side `.object` promise) never resolves with Qwen/OpenRouter because the provider silently ignores `response_format: json_schema`. The `toTextStreamResponse()` path works fine — it streams raw JSON text that `useObject` progressively parses on the client. This is why the `/api/run-all` server-side endpoint was removed and Run All is now orchestrated client-side.
 
 ### History session restoration
-The `?session=<id>` query parameter is **preserved** in the URL during history mode so page refresh restores the current session (US 10). The param is only cleared when the user starts a new session or drops a new file. The workspace auto-scrolls the main content to `scrollTop=0` on entering history mode.
+
+The `?session=<id>` query parameter is **preserved** in the URL during history mode so page refresh restores the current session. The param is only cleared when the user starts a new session or drops a new file. The workspace auto-scrolls the main content to `scrollTop=0` on entering history mode.
 
 ### Session navigation
+
 In history mode, the workspace header shows prev/next buttons, a "Session N of M" indicator, and a "Back to Group" button centered between the title and "New Session" action. "Back to Group" navigates to the History page scrolled to the specific session row within the expanded group card.
 
 ### Group titles
+
 Image groups in the History page can be renamed by double-clicking the title. Titles are stored in a separate localStorage key (`etsy-copywriter-group-titles`) and survive session deletion. Orphaned titles (groups with zero sessions) are automatically cleaned up via `cleanupOrphanedGroupTitles()`. Display is capped at 18 characters with ellipsis; the full title is stored.
 
 ### Session indices
+
 Within an expanded group card, sessions are displayed newest-first. Each session row shows an ascending index (#1 = oldest, #N = newest), computed as `totalSessions - visualPosition`.
 
 ### Client-side error handling
+
 Both `useObject` `onFinish` callbacks check the `error` property. If the model's output fails Zod validation (TypeValidationError), the error is surfaced to the user via a destructive alert banner instead of silently showing empty fields.
 
 ### Debug mechanics
+
 - Console logs tagged `[PIPELINE]` in `usePipeline.ts` and `useWorkspace.ts` for stage transitions and action triggers.
 - Collapsible `<DebugPanel>` at the bottom of the workspace page shows live pipeline state, error messages, and raw JSON of analysis/copy objects.
 - `grep '\[PIPELINE\]'` to find all debug output.
 
 ### FormData + useObject
+
 `useObject` does not natively support FormData. The analyze-image hook provides a custom `fetch` function that reads `formDataRef.current` and sends it via POST.
 
 ### `globalThis.AI_SDK_LOG_WARNINGS = false`
+
 Suppresses SDK warnings in both pipeline modules.
 
 ## Default Models
