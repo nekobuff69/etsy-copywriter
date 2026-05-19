@@ -12,13 +12,14 @@
 
 | Term          | Definition                                                                      | Aliases to avoid        |
 | ------------- | ------------------------------------------------------------------------------- | ----------------------- |
-| **Pipeline**  | The full chain: upload an image → analyze it → generate copy                    | Workflow, process       |
-| **Analysis**  | Structured data describing an artwork (subject, style, colors, etc.)            | Description, metadata   |
+| **Pipeline**  | The full chain: optionally provide user context + upload an image → analyze it → generate copy                    | Workflow, process       |
+| **Analysis**  | Structured data describing the product: subject, product_type, medium, artistic_style, primary_colors, vibe_keywords            | Description, metadata   |
 | **Copy**      | Etsy listing content: titles, tags, and description                             | Content, text, output   |
 | **Session**   | One complete run through the pipeline, saved to History                         | Entry, run, generation  |
 | **Session Nav** | prev/next buttons and "Session N of M" indicator in the workspace header when viewing history | Navigation, pagination |
 | **Back to Group** | Navigation action returning from a history session in the workspace to the History page, scrolled to the specific session row | Return, go back |
 | **Run All**   | The client-side action that runs the full pipeline (analysis → copy) by sequentially calling `/api/analyze-image` then `/api/generate-copy` | Full run, auto-generate |
+| **User Context** | Free-text input describing the product being sold (what it is, materials, style, audience). Injected into both Vision Model and Copy Model prompts. | Product info, metadata, notes |
 | **Streaming** | Progressive delivery of LLM output as partial objects                           | Live update, real-time  |
 
 ## LLM Infrastructure
@@ -49,9 +50,14 @@
 
 | Term            | Definition                                              | Aliases to avoid      |
 | --------------- | ------------------------------------------------------- | --------------------- |
-| **Upload Zone**   | The workspace panel for dropping or selecting an image  | Drop zone, file area  |
+| **Upload Zone**   | The workspace panel for dropping or selecting an image and optionally describing the product via a User Context textarea  | Drop zone, file area  |
 | **Analysis Zone** | The workspace panel showing and editing Analysis        | Analysis panel, form  |
 | **Copy Zone**     | The workspace panel showing generated Copy with actions | Output zone, results  |
+## Data Migration
+|
+| Term          | Definition                                                                      | Aliases to avoid        |
+| ------------- | ------------------------------------------------------------------------------- | ----------------------- |
+| **Migration**  | Transparent upgrade of old nested 4-section Analysis (15 fields) to new flat 6-field format on session read | Upgrade, transform      |
 
 ## Relationships
 
@@ -62,7 +68,9 @@
 - A **Session** stores a snapshot of the **LLM Config** that produced it.
 - Each **LLM Config** targets exactly one **Endpoint** and one model name.
 - The app has two independent **LLM Configs**: one for the **Vision Model**, one for the **Copy Model**.
+- A **User Context** text is injected into both the **Vision Model** prompt (as authoritative ground truth) and the **Copy Model** prompt (as selling context).
 - A **Health Check** tests one **LLM Config** at a time.
+- Old **Sessions** with nested 4-section **Analysis** are transparently **Migrated** to the flat 6-field format on read.
 
 ## Example dialogue
 
@@ -88,3 +96,4 @@
 - **"Provider"** was used loosely to mean the service company (OpenRouter), the endpoint URL, and the SDK factory object. Use **Provider** for the company/service, **Endpoint** for the URL, and **Provider Factory** only when discussing the `createProvider()` code module.
 - **"Copy"** was used to mean both (a) the generated Etsy listing content and (b) the clipboard action. Use **Copy** for the content and **Copy to Clipboard** or **Copy Action** for the UI action.
 - **"Analysis"** was used to mean both the process of analyzing and the resulting structured data. Use **Analyze** (verb) for the process and **Analysis** (noun) for the output data.
+- **"User Context"** was historically absent — user could only upload an image. Now the **Upload Zone** includes a free-text input. Use **User Context** or **User Text** for the string value stored in sessions; use **Textarea** or **Context Input** for the UI element.

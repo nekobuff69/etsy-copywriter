@@ -5,7 +5,7 @@
 - `pnpm dev` — Next.js dev server on `http://localhost:3000`
 - `pnpm build` — production build
 - `pnpm lint` — ESLint (Next.js flat config)
-- `pnpm test` — Vitest (`tests/getImageAnalysis.test.ts`, `tests/history.test.ts`, `tests/session.test.ts`, `tests/file-utils.test.ts`, `tests/getCopyWritings.test.ts`, `tests/file-hash.test.ts`, `tests/settings.test.ts`, `tests/api-settings.test.ts`, `tests/llm-provider.test.ts`, `tests/history-duplicate-ids.test.ts`, `tests/group-titles.test.ts`)
+- `pnpm test` — Vitest (`tests/getImageAnalysis.test.ts`, `tests/history.test.ts`, `tests/session.test.ts`, `tests/file-utils.test.ts`, `tests/getCopyWritings.test.ts`, `tests/file-hash.test.ts`, `tests/settings.test.ts`, `tests/api-settings.test.ts`, `tests/llm-provider.test.ts`, `tests/history-duplicate-ids.test.ts`, `tests/group-titles.test.ts`, `tests/schema-migration.test.ts`)
 
 ## Environment
 - Requires `OPENROUTER_API_KEY` in `.env`
@@ -22,23 +22,22 @@
 - **`hooks/useWorkspace.ts`** — single custom hook encapsulating all client state, `useObject` instances, file/thumbnail lifecycle, history CRUD, session nav computation, and action dispatch. Returns grouped interface `{upload, analysis, copy, history, global, sessionNav}` so `page.tsx` stays declarative.
 - The workspace sub-header (3-column layout: title/Read-only badge on left, session nav buttons centered, New Session on right) is rendered inline in `page.tsx`, not as a separate component.
 - **Design system** — Kami (紙) editorial system: warm parchment background, ivory cards, sage (`#4A5D3F`) accent, Charter/Georgia serif stack. See `docs/adr/009-kami-design-system.md`.
-- **`components/UploadZone.tsx`** — file drop + preview, Analyze/Run All/Stop buttons.
-- **`components/AnalysisZone.tsx`** — editable analysis form (Core Attributes, Technical Specs, Visual Identity, Marketing Hooks) + Generate Copy / Regenerate / Stop. Empty state badge shows `👁️ <short-model-name>`.
+- **`components/UploadZone.tsx`** — file drop + preview, User Context textarea (500-char soft cap, placeholder hints), Analyze/Run All/Stop buttons. Textarea persists across image changes, cleared on New Session.
+- **`components/AnalysisZone.tsx`** — editable analysis form with 6 flat fields: Subject, Product Type, Medium, Artistic Style, Primary Colors, Vibe Keywords + Generate Copy / Regenerate / Stop. Empty state badge shows `👁️ <short-model-name>`.
 - **`components/CopyZone.tsx`** — titles, tags, description with per-field copy buttons + Copy All / Regenerate / Stop. Badge shows `✍️ <short-model-name>`.
 - **`components/ThemeToggle.tsx`** — Sun/moon slider toggle (64×32px, no text label, sliding ivory knob)
 - **`components/KamiToaster.tsx`** — Sonner wrapper applying `.kami-toast` class for Kami-styled toasts
 
 ### API Routes (`app/api/`)
-- **`/api/analyze-image`** — POST FormData with `image` file → `streamObject` → `toTextStreamResponse()`
-- **`/api/generate-copy`** — POST analysis JSON → `streamObject` → `toTextStreamResponse()`
+- **`/api/analyze-image`** — POST FormData with `image` file and optional `userText` → `streamObject` → `toTextStreamResponse()`
+- **`/api/generate-copy`** — POST JSON `{ analysis, userText? }` → `streamObject` → `toTextStreamResponse()`
 - **No `/api/run-all` endpoint** — the "Run All" feature is orchestrated client-side by `usePipeline.runAll()`, which calls the two working endpoints sequentially (see ADR 007)
 
 ### Pipelines (`lib/`)
-- **Image Analysis** (`lib/getImageAnalysis.ts`): `validateFormat(Uint8Array)` → `fileTypeFromBuffer` → base64 encode → `streamObject` with vision model → returns `StreamObjectResult`
-- **Copy Generation** (`lib/getCopyWritings.ts`): Zod validate analysis → `streamObject` with LLM → returns `StreamObjectResult`
-- Default models: vision `qwen/qwen3-vl-8b-instruct`, copy `qwen/qwen3-vl-30b-a3b-instruct` (both OpenRouter)
-- Both functions are pure — **no self-executing calls**. Safe to import.
-- Both `streamObject` calls include `schemaName`, `schemaDescription`, and explicit schema structure in the system prompt — required because Qwen through OpenRouter ignores the schema unless it's spelled out in the prompt
+- **Image Analysis** (`lib/getImageAnalysis.ts`): `analyzeImage(imageBytes, model, userText?)` — validates format → base64 encode → `streamObject` with flat 6-field schema. If `userText` provided, prepended as authoritative ground truth: "User says this is: [text]."
+- **Copy Generation** (`lib/getCopyWritings.ts`): `generateCopy(analysis, model, userText?)` — Zod validate flat analysis → `streamObject` with LLM. If `userText` provided, injected verbatim before analysis JSON.
+- The flat 6-field schema: `subject`, `product_type`, `medium`, `artistic_style`, `primary_colors` (string[]), `vibe_keywords` (string[]). See `lib/schemas.ts`.
+- `migrateAnalysis()` in `lib/schemas.ts` transparently upgrades old nested-format sessions on read.
 
 ### Client Streaming
 - Uses `experimental_useObject` (aliased as `useObject`) from `@ai-sdk/react`
@@ -59,7 +58,7 @@
 ### History Manager (`lib/history.ts`)
 - localStorage-based session storage with LRU eviction at max 20 sessions
 - Interface: `getSessions`, `getSession`, `saveSession`, `deleteSession`, `clearHistory`
-- Each session stores: `id` (`crypto.randomUUID()`, fallback `${Date.now()}-${Math.random()}`), `thumbnail` (JPEG data URL), `analysis`, `copy`, `createdAt`, optional `imageHash`, `visionModel`, `copyModel`, `baseURL`, `providerLabel`
+- Each session stores: `id` (`crypto.randomUUID()`, fallback `${Date.now()}-${Math.random()}`), `thumbnail` (JPEG data URL), `analysis`, `copy`, `createdAt`, optional `imageHash`, `visionModel`, `copyModel`, `baseURL`, `providerLabel`, `userText`
 - Sessions are grouped by `imageHash` on the History page (`app/history/`) into expandable `ImageGroup` cards
 - Deleting the last session in a group triggers `cleanupOrphanedGroupTitles()` to remove orphaned group titles
 - Thumbnails are compressed via `createThumbnail` before storage to avoid `QuotaExceededError`
@@ -68,6 +67,15 @@
 - Separate localStorage key (`etsy-copywriter-group-titles`) for editable image group titles
 - Interface: `getGroupTitle`, `setGroupTitle`, `getAllGroupTitles`, `cleanupOrphanedGroupTitles`
 - Solo sessions (no imageHash) use `solo-<sessionId>` as key
+|
+|### User Context (`lib/` + hooks + UploadZone)
+|- Free-text input in UploadZone lets user describe their product (what it is, materials, style, target audience).
+|- Placeholder example: "Hand-painted silk bookmark, Monet's Water Lilies pattern, cotton paper, boho aesthetic. Gift for book lovers."
+|- 500-char soft cap with amber/red counter at 400/500 chars.
+|- Text flows to both pipeline stages: Vision Model gets it as authoritative ground truth; Copy Model gets it verbatim as selling context.
+|- Empty userText = pipeline behaves identically to pre-refactor (backward compatible).
+|- User text persists across image changes; cleared only by New Session.
+|- Stored per-session in History for review/restore.
 
 ## Critical Gotchas
 
