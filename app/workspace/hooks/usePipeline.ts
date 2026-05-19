@@ -67,6 +67,7 @@ export function usePipeline(deps: UsePipelineDeps) {
 				copyModel: settings.copy.model,
 				baseURL: settings.vision.baseURL,
 				providerLabel: deriveProviderLabel(settings.vision.baseURL),
+				userText: userText || undefined,
 			});
 			onReloadHistory();
 		},

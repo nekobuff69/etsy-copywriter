@@ -165,6 +165,25 @@ describe("history", () => {
 			expect(session.visionModel).toBeUndefined();
 			expect(session.copyModel).toBeUndefined();
 		});
+
+	it("should store userText when provided", () => {
+		const session = saveSession({
+			thumbnail: "thumb",
+			analysis: mockAnalysis,
+			copy: mockCopy,
+			userText: "handmade bookmark",
+		});
+		expect(session.userText).toBe("handmade bookmark");
+	});
+
+	it("should allow userText to be omitted (backward compat)", () => {
+		const session = saveSession({
+			thumbnail: "thumb",
+			analysis: mockAnalysis,
+			copy: mockCopy,
+		});
+		expect(session.userText).toBeUndefined();
+	});
 	});
 
 	describe("groupSessionsByImage", () => {

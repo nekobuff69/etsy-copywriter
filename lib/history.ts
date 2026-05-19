@@ -82,6 +82,7 @@ export function saveSession(params: {
 	copyModel?: string;
 	baseURL?: string;
 	providerLabel?: string;
+	userText?: string;
 }): HistorySession {
 	const sessions = readSessions();
 	const session: HistorySession = {
@@ -95,6 +96,7 @@ export function saveSession(params: {
 		copyModel: params.copyModel,
 		baseURL: params.baseURL,
 		providerLabel: params.providerLabel,
+		userText: params.userText,
 	};
 
 	sessions.unshift(session);
