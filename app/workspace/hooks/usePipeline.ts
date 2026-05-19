@@ -20,6 +20,7 @@ interface UsePipelineDeps {
 		stage: "idle" | "analyzing" | "generating" | "done" | "error",
 	) => void;
 	onReloadHistory: () => void;
+	userText: string;
 }
 
 /**
@@ -40,6 +41,7 @@ export function usePipeline(deps: UsePipelineDeps) {
 		onError,
 		onStateChange,
 		onReloadHistory,
+		userText,
 	} = deps;
 
 	const [analysis, setAnalysis] = useState<Partial<ImageAnalysisType> | null>(null);
@@ -160,13 +162,14 @@ export function usePipeline(deps: UsePipelineDeps) {
 			}
 			const fd = new FormData();
 			fd.append("image", file);
+			if (userText) fd.append("userText", userText);
 			formDataRef.current = fd;
 			onStateChange("analyzing");
 			setAnalysis(null);
 			setCopy(null);
 			submitAnalysis({});
 		},
-		[onStateChange, submitAnalysis],
+		[onStateChange, submitAnalysis, userText],
 	);
 
 	const startCopy = useCallback(
@@ -178,9 +181,9 @@ export function usePipeline(deps: UsePipelineDeps) {
 			}
 			onStateChange("generating");
 			setCopy(null);
-			submitCopy(payload);
+			submitCopy({ analysis: payload, userText });
 		},
-		[analysis, onStateChange, submitCopy],
+		[analysis, onStateChange, submitCopy, userText],
 	);
 
 	/**
@@ -204,6 +207,7 @@ export function usePipeline(deps: UsePipelineDeps) {
 
 			const fd = new FormData();
 			fd.append("image", file);
+			if (userText) fd.append("userText", userText);
 			formDataRef.current = fd;
 			submitAnalysis({});
 
@@ -224,7 +228,7 @@ export function usePipeline(deps: UsePipelineDeps) {
 				copyRejectRef.current = reject;
 			});
 
-			submitCopy(analysisResult);
+			submitCopy({ analysis: analysisResult, userText });
 
 			let copyResult: CopyWritingType;
 			try {
@@ -237,7 +241,7 @@ export function usePipeline(deps: UsePipelineDeps) {
 			// Guarantee session save (copy onFinish may also save, which is idempotent)
 			handleSaveSession(analysisResult, copyResult);
 		},
-		[onStateChange, submitAnalysis, submitCopy, handleSaveSession],
+		[onStateChange, submitAnalysis, submitCopy, handleSaveSession, userText],
 	);
 
 	const stop = useCallback(() => {

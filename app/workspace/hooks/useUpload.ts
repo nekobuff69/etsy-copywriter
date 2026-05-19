@@ -10,6 +10,7 @@ export function useUpload() {
 	const [previewUrl, setPreviewUrl] = useState<string | null>(null);
 	const [thumbnailUrl, setThumbnailUrl] = useState<string | null>(null);
 	const [imageHash, setImageHash] = useState<string | null>(null);
+	const [userText, setUserText] = useState("");
 	const fileInputRef = useRef<HTMLInputElement>(null);
 
 	/**
@@ -68,6 +69,7 @@ export function useUpload() {
 		previewUrl,
 		thumbnailUrl,
 		imageHash,
+		userText, setUserText,
 		handleFile,
 		setThumbnailUrl: setStoredThumbnail,
 		onDrop,

@@ -19,9 +19,11 @@ export async function POST(req: NextRequest) {
 		}
 
 		const bytes = new Uint8Array(await file.arrayBuffer());
+		const userText = formData.get("userText");
+		const userTextStr = typeof userText === "string" ? userText : "";
 		const provider = createProvider(settings.vision);
 		const model = provider(settings.vision.model);
-		const result = await analyzeImage(bytes, model);
+		const result = await analyzeImage(bytes, model, userTextStr);
 		return result.toTextStreamResponse();
 	} catch (err: unknown) {
 		const message = err instanceof Error ? err.message : "Unknown error";

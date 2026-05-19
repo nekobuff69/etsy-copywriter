@@ -25,6 +25,7 @@ export async function validateFormat(
 export async function analyzeImage(
 	imageBytes: Uint8Array,
 	model: LanguageModel,
+	userText = "",
 ) {
 	const { extension, mime }: FileFormatInfo = await validateFormat(imageBytes);
 
@@ -50,7 +51,9 @@ export async function analyzeImage(
 		messages: [
 			{
 				role: "system",
-				content: `You are an experienced product photography analyst for Etsy sellers. Analyze the image and respond with a JSON object that has EXACTLY these six top-level keys:
+				content: `${userText ? `User says this product is: "${userText}". Your analysis MUST respect this as ground truth about what the product actually is. The image shows the design, pattern, or artwork ON this product — not the product category itself.
+
+` : ""}You are an experienced product photography analyst for Etsy sellers. Analyze the image and respond with a JSON object that has EXACTLY these six top-level keys:
 
 1. "subject" — string describing what is depicted in the image (the artwork, pattern, or design shown)
 2. "product_type" — string: the physical product being sold (e.g., "art print", "original painting", "bookmark", "tote bag", "sticker", "mug")

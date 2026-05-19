@@ -137,6 +137,8 @@ export default function WorkspacePage() {
 						isLoading={global.isLoading}
 						isHistory={global.isHistory}
 						fileInputRef={upload.fileInputRef}
+						userText={upload.userText}
+						onUserTextChange={upload.onUserTextChange}
 					/>
 
 					<AnalysisZone

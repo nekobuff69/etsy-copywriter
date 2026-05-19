@@ -1,6 +1,7 @@
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Upload, Play, Square } from "lucide-react";
+import { Textarea } from "@/components/ui/textarea";
 
 interface UploadZoneProps {
 	file: File | null;
@@ -14,6 +15,8 @@ interface UploadZoneProps {
 	isLoading: boolean;
 	isHistory: boolean;
 	fileInputRef: React.RefObject<HTMLInputElement | null>;
+	userText: string;
+	onUserTextChange: (text: string) => void;
 }
 
 export function UploadZone({
@@ -28,6 +31,8 @@ export function UploadZone({
 	isLoading,
 	isHistory,
 	fileInputRef,
+	userText,
+	onUserTextChange,
 }: UploadZoneProps) {
 	const showHistoryPreview = isHistory && thumbnailUrl;
 
@@ -82,6 +87,19 @@ export function UploadZone({
 									onChange={onFileInput}
 									disabled={isHistory}
 								/>
+							</div>
+						</div>
+						<div className="mt-3 space-y-1">
+							<Textarea
+								value={userText}
+								onChange={(e) => onUserTextChange(e.target.value)}
+								placeholder="e.g. Hand-painted silk bookmark, Monet's Water Lilies pattern, cotton paper, boho aesthetic. Gift for book lovers."
+								rows={3}
+								readOnly={isHistory}
+								className="resize-none text-sm"
+							/>
+							<div className={`text-xs text-right ${userText.length > 500 ? 'text-red-500' : userText.length > 400 ? 'text-amber-500' : 'text-muted-foreground'}`}>
+								{userText.length}/500
 							</div>
 						</div>
 

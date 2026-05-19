@@ -13,6 +13,7 @@ export interface HistorySession {
 	copyModel?: string;
 	baseURL?: string;
 	providerLabel?: string;
+	userText?: string;
 }
 
 const STORAGE_KEY = "etsy-copywriter-history";

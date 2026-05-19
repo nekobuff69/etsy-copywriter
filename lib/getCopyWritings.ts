@@ -19,6 +19,7 @@ export function validateImageAnalysis(analysis: ImageAnalysisType) {
 export function generateCopy(
 	artworkAnalysis: ImageAnalysisType,
 	model: LanguageModel,
+	userText = "",
 ) {
 	const validArtworkAnalysis = validateImageAnalysis(artworkAnalysis);
 
@@ -43,7 +44,7 @@ Output ONLY valid JSON with this exact structure. Do not add extra keys or use d
 			},
 			{
 				role: "user",
-				content: `Based on this artwork analysis, create compelling and SEO-friendly copy for an Etsy listing:
+				content: `${userText ? `User context: "${userText}"\n\n` : ""}Based on this artwork analysis, create compelling and SEO-friendly copy for an Etsy listing:
 
 ${JSON.stringify(validArtworkAnalysis, null, 2)}
 `,

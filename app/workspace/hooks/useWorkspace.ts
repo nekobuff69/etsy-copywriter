@@ -32,6 +32,8 @@ export interface UploadGroup {
 	runAll: () => void;
 	stop: () => void;
 	fileInputRef: React.RefObject<HTMLInputElement | null>;
+	userText: string;
+	onUserTextChange: (text: string) => void;
 }
 
 export interface AnalysisGroup {
@@ -221,6 +223,7 @@ export function useWorkspace(): {
 	const pipeline = usePipeline({
 		thumbnailUrl: uploadState.thumbnailUrl,
 		imageHash: uploadState.imageHash,
+		userText: uploadState.userText,
 		onAnalysisFinish,
 		onCopyFinish,
 		onError,
@@ -235,6 +238,7 @@ export function useWorkspace(): {
 			setEditedCopy(session.copy);
 			uploadState.handleFile(null);
 			uploadState.setThumbnailUrl(session.thumbnail ?? null);
+			uploadState.setUserText(session.userText ?? "");
 			setStage("done");
 			setError(null);
 			setSessionView(viewHistory(session.id));
@@ -256,6 +260,7 @@ export function useWorkspace(): {
 			setEditedCopy(session.copy);
 			uploadState.handleFile(null);
 			uploadState.setThumbnailUrl(session.thumbnail ?? null);
+			uploadState.setUserText(session.userText ?? "");
 			setStage("done");
 			setError(null);
 			setSessionView(viewHistory(session.id));
@@ -326,6 +331,7 @@ export function useWorkspace(): {
 	// History actions
 	const startNewSession = useCallback(() => {
 		uploadState.handleFile(null);
+		uploadState.setUserText("");
 		setEditedAnalysis(null);
 		setEditedCopy(null);
 		setStage("idle");
@@ -396,6 +402,8 @@ export function useWorkspace(): {
 			setThumbnailUrl: uploadState.setThumbnailUrl,
 			onDrop: uploadState.onDrop,
 			onFileInput: uploadState.onFileInput,
+			userText: uploadState.userText,
+			onUserTextChange: uploadState.setUserText,
 			startAnalysis: () => pipeline.startAnalysis(uploadState.file),
 			runAll: () => pipeline.runAll(uploadState.file),
 			stop: pipeline.stop,
