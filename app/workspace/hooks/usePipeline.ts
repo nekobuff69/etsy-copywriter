@@ -71,7 +71,7 @@ export function usePipeline(deps: UsePipelineDeps) {
 			});
 			onReloadHistory();
 		},
-		[thumbnailUrl, imageHash, onReloadHistory],
+		[thumbnailUrl, imageHash, userText, onReloadHistory],
 	);
 
 	// Analysis streaming
