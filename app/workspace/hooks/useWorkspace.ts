@@ -37,9 +37,8 @@ export interface UploadGroup {
 export interface AnalysisGroup {
 	displayAnalysis: Partial<ImageAnalysisType> | null;
 	updateAnalysisField: <K extends keyof ImageAnalysisType>(
-		section: K,
-		field: keyof ImageAnalysisType[K],
-		value: unknown,
+		field: K,
+		value: ImageAnalysisType[K],
 	) => void;
 	startCopy: (data?: ImageAnalysisType) => void;
 	startAnalysis: () => void;
@@ -360,18 +359,14 @@ export function useWorkspace(): {
 	// Field editors
 	const updateAnalysisField = useCallback(
 		<K extends keyof ImageAnalysisType>(
-			section: K,
-			field: keyof ImageAnalysisType[K],
-			value: unknown,
+			field: K,
+			value: ImageAnalysisType[K],
 		) => {
 			setEditedAnalysis((prev) => {
 				if (!prev) return prev;
 				return {
 					...prev,
-					[section]: {
-						...(prev[section] as object),
-						[field]: value,
-					},
+					[field]: value,
 				};
 			});
 		},

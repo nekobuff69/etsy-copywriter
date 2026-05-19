@@ -1,5 +1,6 @@
 import type { ImageAnalysisType, CopyWritingType } from "./definitions";
 import { cleanupOrphanedGroupTitles } from "./group-titles";
+import { migrateAnalysis } from "./schemas";
 
 export interface HistorySession {
 	id: string;
@@ -29,6 +30,12 @@ function readSessions(): HistorySession[] {
 		const raw = localStorage.getItem(STORAGE_KEY);
 		if (!raw) return [];
 		const sessions = JSON.parse(raw) as HistorySession[];
+		// Migrate old nested analysis to new flat schema
+		for (const session of sessions) {
+			if (session.analysis && typeof session.analysis === "object" && "core_attributes" in session.analysis) {
+				session.analysis = migrateAnalysis(session.analysis) as HistorySession["analysis"];
+			}
+		}
 
 		// Fix duplicate IDs from old Date.now() id scheme (pre-UUID migration).
 		// Two sessions with the same id cause the expand/collapse toggle to affect

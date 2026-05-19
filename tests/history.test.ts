@@ -44,28 +44,12 @@ beforeEach(() => {
 });
 
 const mockAnalysis: ImageAnalysisType = {
-	core_attributes: {
-		subject: "test",
-		orientation: "landscape",
-		composition: "centered",
-	},
-	technical_specs: {
-		medium: "oil",
-		surface: "canvas",
-		textures: ["smooth"],
-		visible_tools: ["brush"],
-	},
-	visual_identity: {
-		primary_colors: ["blue"],
-		lighting_vibe: "soft",
-		artistic_style: "impressionist",
-	},
-	marketing_hooks: {
-		emotional_keywords: ["calm"],
-		symbolism: "peace",
-		suggested_placement: ["living room"],
-		unique_handcrafted_details: "hand-painted",
-	},
+	subject: "test",
+	product_type: "art print",
+	medium: "oil",
+	artistic_style: "impressionist",
+	primary_colors: ["blue"],
+	vibe_keywords: ["calm"],
 };
 
 const mockCopy: CopyWritingType = {
@@ -328,7 +312,7 @@ describe("history", () => {
 			let tick = 2000;
 			vi.spyOn(Date, "now").mockImplementation(() => tick++);
 			const s1 = saveSession({ thumbnail: "a", analysis: mockAnalysis, copy: mockCopy, imageHash: "hash1" });
-			const s2 = saveSession({ thumbnail: "b", analysis: mockAnalysis, copy: mockCopy, imageHash: "hash1" });
+			saveSession({ thumbnail: "b", analysis: mockAnalysis, copy: mockCopy, imageHash: "hash1" }); // s2 intentionally unused
 			vi.restoreAllMocks();
 
 			setGroupTitle("hash1", "Mountain Scene");
@@ -369,7 +353,7 @@ describe("history", () => {
 			vi.spyOn(Date, "now").mockImplementation(() => tick++);
 			const s1 = saveSession({ thumbnail: "a", analysis: mockAnalysis, copy: mockCopy, imageHash: "partial-hash" });
 			const s2 = saveSession({ thumbnail: "b", analysis: mockAnalysis, copy: mockCopy, imageHash: "partial-hash" });
-			const s3 = saveSession({ thumbnail: "c", analysis: mockAnalysis, copy: mockCopy, imageHash: "partial-hash" });
+			saveSession({ thumbnail: "c", analysis: mockAnalysis, copy: mockCopy, imageHash: "partial-hash" }); // s3 intentionally unused
 			vi.restoreAllMocks();
 
 			setGroupTitle("partial-hash", "Partial Delete");
@@ -483,5 +467,47 @@ describe("history", () => {
 			// All have same timestamp, so sort is stable but indices should still be 3, 2, 1
 			expect(result.map(r => r.expectedIndex).sort()).toEqual([1, 2, 3]);
 		});
+	});
+});
+
+describe("analysis migration", () => {
+	it("should migrate old nested analysis on read", () => {
+		const oldSession = {
+			id: "test-migrate-1",
+			thumbnail: "thumb",
+			analysis: {
+				core_attributes: { subject: "migrated-subject", orientation: "landscape", composition: "centered" },
+				technical_specs: { medium: "oil", surface: "canvas", textures: ["rough"], visible_tools: ["brush"] },
+				visual_identity: { primary_colors: ["red", "blue"], lighting_vibe: "warm", artistic_style: "modern" },
+				marketing_hooks: { emotional_keywords: ["joy", "peace"], symbolism: "hope", suggested_placement: ["office"], unique_handcrafted_details: "handmade" },
+			},
+			copy: mockCopy,
+			createdAt: Date.now(),
+		};
+		localStorage.setItem("etsy-copywriter-history", JSON.stringify([oldSession]));
+
+		const sessions = getSessions();
+		expect(sessions.length).toBe(1);
+		const analysis = sessions[0].analysis;
+		expect(analysis.subject).toBe("migrated-subject");
+		expect(analysis.product_type).toBe(""); // no old equivalent
+		expect(analysis.medium).toBe("oil");
+		expect(analysis.artistic_style).toBe("modern");
+		expect(analysis.primary_colors).toEqual(["red", "blue"]);
+		expect(analysis.vibe_keywords).toEqual(["joy", "peace"]);
+	});
+
+	it("should not double-migrate already-flat analysis", () => {
+		const flatSession = {
+			id: "test-flat-1",
+			thumbnail: "thumb",
+			analysis: mockAnalysis,
+			copy: mockCopy,
+			createdAt: Date.now(),
+		};
+		localStorage.setItem("etsy-copywriter-history", JSON.stringify([flatSession]));
+
+		const sessions = getSessions();
+		expect(sessions[0].analysis).toEqual(mockAnalysis);
 	});
 });

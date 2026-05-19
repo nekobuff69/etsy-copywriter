@@ -46,16 +46,18 @@ export async function analyzeImage(
 		schema: imageAnalysisSchema,
 		schemaName: "ImageAnalysis",
 		schemaDescription:
-			"Detailed artwork analysis with core attributes, technical specs, visual identity, and marketing hooks",
+			"Flat product image analysis with 6 fields",
 		messages: [
 			{
 				role: "system",
-				content: `You are an experienced art critic. Analyze the image and respond with a JSON object that has EXACTLY these four top-level keys:
+				content: `You are an experienced product photography analyst for Etsy sellers. Analyze the image and respond with a JSON object that has EXACTLY these six top-level keys:
 
-1. "core_attributes" — object with: subject (string), orientation (one of: "landscape", "portrait", "square"), composition (string)
-2. "technical_specs" — object with: medium (string), surface (string), textures (array of strings), visible_tools (array of strings)
-3. "visual_identity" — object with: primary_colors (array of strings), lighting_vibe (string), artistic_style (string)
-4. "marketing_hooks" — object with: emotional_keywords (array of strings), symbolism (string), suggested_placement (array of strings), unique_handcrafted_details (string)
+1. "subject" — string describing what is depicted in the image (the artwork, pattern, or design shown)
+2. "product_type" — string: the physical product being sold (e.g., "art print", "original painting", "bookmark", "tote bag", "sticker", "mug")
+3. "medium" — string: the art medium or material (e.g., "oil on canvas", "digital art", "watercolor", "cotton paper")
+4. "artistic_style" — string: the artistic style (e.g., "impressionist", "boho", "minimalist", "vintage")
+5. "primary_colors" — array of strings: dominant colors in the design
+6. "vibe_keywords" — array of strings: emotional and aesthetic keywords for marketing (e.g., ["calm", "elegant", "cozy"])
 
 Output ONLY valid JSON with this exact structure. Do not add extra keys or use different key names.`,
 			},

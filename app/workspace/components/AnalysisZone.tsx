@@ -12,9 +12,8 @@ import { shortModelName } from "@/lib/display";
 interface AnalysisZoneProps {
 	displayAnalysis: Partial<ImageAnalysisType> | null;
 	updateAnalysisField: <K extends keyof ImageAnalysisType>(
-		section: K,
-		field: keyof ImageAnalysisType[K],
-		value: unknown,
+		field: K,
+		value: ImageAnalysisType[K],
 	) => void;
 	onGenerateCopy: (data?: ImageAnalysisType) => void;
 	onRegenerateAnalysis: () => void;
@@ -26,16 +25,6 @@ interface AnalysisZoneProps {
 	visionModel?: string | null;
 }
 
-function Section({ children, title }: { children: ReactNode; title: string }) {
-	return (
-		<div>
-			<h3 className="text-xs font-medium text-primary uppercase tracking-[0.4px] mb-2">
-				{title}
-			</h3>
-			<div className="space-y-2">{children}</div>
-		</div>
-	);
-}
 
 function Field({ children, label }: { children: ReactNode; label: string }) {
 	return (
@@ -92,184 +81,63 @@ export function AnalysisZone({
 			</CardHeader>
 			<CardContent className="flex-1 overflow-hidden flex flex-col pt-4">
 				<div className="flex-1 overflow-y-auto space-y-4 pr-1">
-					<Section title="Core Attributes">
-						<Field label="Subject">
-							<Textarea
-								value={displayAnalysis.core_attributes?.subject ?? ""}
-								onChange={(e) =>
-									updateAnalysisField("core_attributes", "subject", e.target.value)
-								}
-								readOnly={isHistory}
-								rows={2}
-							/>
-						</Field>
-						<Field label="Orientation">
-							<Input
-								value={displayAnalysis.core_attributes?.orientation ?? ""}
-								onChange={(e) =>
-									updateAnalysisField("core_attributes", "orientation", e.target.value)
-								}
-								readOnly={isHistory}
-							/>
-						</Field>
-						<Field label="Composition">
-							<Textarea
-								value={displayAnalysis.core_attributes?.composition ?? ""}
-								onChange={(e) =>
-									updateAnalysisField("core_attributes", "composition", e.target.value)
-								}
-								readOnly={isHistory}
-								rows={2}
-							/>
-						</Field>
-					</Section>
-
-					<Section title="Technical Specs">
-						<Field label="Medium">
-							<Input
-								value={displayAnalysis.technical_specs?.medium ?? ""}
-								onChange={(e) =>
-									updateAnalysisField("technical_specs", "medium", e.target.value)
-								}
-								readOnly={isHistory}
-							/>
-						</Field>
-						<Field label="Surface">
-							<Input
-								value={displayAnalysis.technical_specs?.surface ?? ""}
-								onChange={(e) =>
-									updateAnalysisField("technical_specs", "surface", e.target.value)
-								}
-								readOnly={isHistory}
-							/>
-						</Field>
-						<Field label="Textures">
-							<Textarea
-								value={(displayAnalysis.technical_specs?.textures ?? []).join(", ")}
-								onChange={(e) =>
-									updateAnalysisField(
-										"technical_specs",
-										"textures",
-										e.target.value.split(",").map((s) => s.trim()),
-									)
-								}
-								readOnly={isHistory}
-								rows={2}
-							/>
-						</Field>
-						<Field label="Visible Tools">
-							<Textarea
-								value={(displayAnalysis.technical_specs?.visible_tools ?? []).join(", ")}
-								onChange={(e) =>
-									updateAnalysisField(
-										"technical_specs",
-										"visible_tools",
-										e.target.value.split(",").map((s) => s.trim()),
-									)
-								}
-								readOnly={isHistory}
-								rows={2}
-							/>
-						</Field>
-					</Section>
-
-					<Section title="Visual Identity">
-						<Field label="Primary Colors">
-							<Textarea
-								value={(displayAnalysis.visual_identity?.primary_colors ?? []).join(", ")}
-								onChange={(e) =>
-									updateAnalysisField(
-										"visual_identity",
-										"primary_colors",
-										e.target.value.split(",").map((s) => s.trim()),
-									)
-								}
-								readOnly={isHistory}
-								rows={2}
-							/>
-						</Field>
-						<Field label="Lighting Vibe">
-							<Textarea
-								value={displayAnalysis.visual_identity?.lighting_vibe ?? ""}
-								onChange={(e) =>
-									updateAnalysisField("visual_identity", "lighting_vibe", e.target.value)
-								}
-								readOnly={isHistory}
-								rows={2}
-							/>
-						</Field>
-						<Field label="Artistic Style">
-							<Textarea
-								value={displayAnalysis.visual_identity?.artistic_style ?? ""}
-								onChange={(e) =>
-									updateAnalysisField("visual_identity", "artistic_style", e.target.value)
-								}
-								readOnly={isHistory}
-								rows={2}
-							/>
-						</Field>
-					</Section>
-
-					<Section title="Marketing Hooks">
-						<Field label="Emotional Keywords">
-							<Textarea
-								value={(
-									displayAnalysis.marketing_hooks?.emotional_keywords ?? []
-								).join(", ")}
-								onChange={(e) =>
-									updateAnalysisField(
-										"marketing_hooks",
-										"emotional_keywords",
-										e.target.value.split(",").map((s) => s.trim()),
-									)
-								}
-								readOnly={isHistory}
-								rows={2}
-							/>
-						</Field>
-						<Field label="Symbolism">
-							<Textarea
-								value={displayAnalysis.marketing_hooks?.symbolism ?? ""}
-								onChange={(e) =>
-									updateAnalysisField("marketing_hooks", "symbolism", e.target.value)
-								}
-								readOnly={isHistory}
-								rows={2}
-							/>
-						</Field>
-						<Field label="Suggested Placement">
-							<Textarea
-								value={(
-									displayAnalysis.marketing_hooks?.suggested_placement ?? []
-								).join(", ")}
-								onChange={(e) =>
-									updateAnalysisField(
-										"marketing_hooks",
-										"suggested_placement",
-										e.target.value.split(",").map((s) => s.trim()),
-									)
-								}
-								readOnly={isHistory}
-								rows={2}
-							/>
-						</Field>
-						<Field label="Unique Details">
-							<Textarea
-								value={
-									displayAnalysis.marketing_hooks?.unique_handcrafted_details ?? ""
-								}
-								onChange={(e) =>
-									updateAnalysisField(
-										"marketing_hooks",
-										"unique_handcrafted_details",
-										e.target.value,
-									)
-								}
-								readOnly={isHistory}
-								rows={2}
-							/>
-						</Field>
-					</Section>
+					<Field label="Subject">
+						<Textarea
+							value={displayAnalysis?.subject ?? ""}
+							onChange={(e) =>
+								updateAnalysisField("subject" as keyof ImageAnalysisType, e.target.value as ImageAnalysisType[keyof ImageAnalysisType])
+							}
+							readOnly={isHistory}
+							rows={2}
+						/>
+					</Field>
+					<Field label="Product Type">
+						<Input
+							value={displayAnalysis?.product_type ?? ""}
+							onChange={(e) =>
+								updateAnalysisField("product_type" as keyof ImageAnalysisType, e.target.value as ImageAnalysisType[keyof ImageAnalysisType])
+							}
+							readOnly={isHistory}
+						/>
+					</Field>
+					<Field label="Medium">
+						<Input
+							value={displayAnalysis?.medium ?? ""}
+							onChange={(e) =>
+								updateAnalysisField("medium" as keyof ImageAnalysisType, e.target.value as ImageAnalysisType[keyof ImageAnalysisType])
+							}
+							readOnly={isHistory}
+						/>
+					</Field>
+					<Field label="Artistic Style">
+						<Input
+							value={displayAnalysis?.artistic_style ?? ""}
+							onChange={(e) =>
+								updateAnalysisField("artistic_style" as keyof ImageAnalysisType, e.target.value as ImageAnalysisType[keyof ImageAnalysisType])
+							}
+							readOnly={isHistory}
+						/>
+					</Field>
+					<Field label="Primary Colors">
+						<Textarea
+							value={(displayAnalysis?.primary_colors ?? []).join(", ")}
+							onChange={(e) =>
+								updateAnalysisField("primary_colors" as keyof ImageAnalysisType, e.target.value.split(",").map((s: string) => s.trim()) as ImageAnalysisType[keyof ImageAnalysisType])
+							}
+							readOnly={isHistory}
+							rows={2}
+						/>
+					</Field>
+					<Field label="Vibe Keywords">
+						<Textarea
+							value={(displayAnalysis?.vibe_keywords ?? []).join(", ")}
+							onChange={(e) =>
+								updateAnalysisField("vibe_keywords" as keyof ImageAnalysisType, e.target.value.split(",").map((s: string) => s.trim()) as ImageAnalysisType[keyof ImageAnalysisType])
+							}
+							readOnly={isHistory}
+							rows={2}
+						/>
+					</Field>
 				</div>
 
 				<div className="flex flex-wrap gap-2 pt-4 flex-shrink-0 border-t border-border/60 mt-2">

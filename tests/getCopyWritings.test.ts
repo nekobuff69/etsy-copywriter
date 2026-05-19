@@ -9,28 +9,12 @@ vi.mock("ai");
 const mockStreamObject = vi.mocked(streamObject);
 
 const mockAnalysis: ImageAnalysisType = {
-	core_attributes: {
-		subject: "test",
-		orientation: "landscape",
-		composition: "centered",
-	},
-	technical_specs: {
-		medium: "oil",
-		surface: "canvas",
-		textures: ["smooth"],
-		visible_tools: ["brush"],
-	},
-	visual_identity: {
-		primary_colors: ["blue"],
-		lighting_vibe: "soft",
-		artistic_style: "impressionist",
-	},
-	marketing_hooks: {
-		emotional_keywords: ["calm"],
-		symbolism: "peace",
-		suggested_placement: ["living room"],
-		unique_handcrafted_details: "hand-painted",
-	},
+	subject: "test",
+	product_type: "art print",
+	medium: "oil",
+	artistic_style: "impressionist",
+	primary_colors: ["blue"],
+	vibe_keywords: ["calm"],
 };
 
 describe("validateImageAnalysis", () => {

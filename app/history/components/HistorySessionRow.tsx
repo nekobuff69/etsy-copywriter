@@ -215,28 +215,40 @@ export function HistorySessionRow({
 
 						{analysisOpen && analysis && (
 							<div className="mt-2 space-y-2 bg-muted/50 rounded-md p-3 text-sm">
-								{analysis.core_attributes && (
+								{analysis.subject && (
 									<div>
 										<span className="font-medium">Subject: </span>
-										{analysis.core_attributes.subject}
+										{analysis.subject}
 									</div>
 								)}
-								{analysis.technical_specs && (
+								{analysis.product_type && (
+									<div>
+										<span className="font-medium">Product Type: </span>
+										{analysis.product_type}
+									</div>
+								)}
+								{analysis.medium && (
 									<div>
 										<span className="font-medium">Medium: </span>
-										{analysis.technical_specs.medium}
+										{analysis.medium}
 									</div>
 								)}
-								{analysis.visual_identity && (
+								{analysis.artistic_style && (
 									<div>
-										<span className="font-medium">Style: </span>
-										{analysis.visual_identity.artistic_style}
+										<span className="font-medium">Artistic Style: </span>
+										{analysis.artistic_style}
 									</div>
 								)}
-								{analysis.marketing_hooks && (
+								{analysis.primary_colors && analysis.primary_colors.length > 0 && (
 									<div>
-										<span className="font-medium">Symbolism: </span>
-										{analysis.marketing_hooks.symbolism}
+										<span className="font-medium">Primary Colors: </span>
+										{analysis.primary_colors.join(", ")}
+									</div>
+								)}
+								{analysis.vibe_keywords && analysis.vibe_keywords.length > 0 && (
+									<div>
+										<span className="font-medium">Vibe Keywords: </span>
+										{analysis.vibe_keywords.join(", ")}
 									</div>
 								)}
 							</div>
