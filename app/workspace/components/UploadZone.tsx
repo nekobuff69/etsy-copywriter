@@ -46,13 +46,22 @@ export function UploadZone({
 			</CardHeader>
 			<CardContent className="flex-1 overflow-hidden flex flex-col pt-4">
 				{showHistoryPreview ? (
-					<div className="flex-1 flex flex-col items-center justify-center space-y-3">
+					<div className="flex-1 flex flex-col items-center space-y-3 overflow-y-auto">
 						<img
 							src={thumbnailUrl}
 							alt="Processed image preview"
 							className="mx-auto max-h-48 object-contain rounded-md"
 						/>
-						<p className="text-xs text-muted-foreground">Processed image preview</p>
+						<div className="w-full mt-3 space-y-1">
+							<Textarea
+								value={userText}
+								onChange={(e) => onUserTextChange(e.target.value)}
+								placeholder="e.g. Hand-painted silk bookmark, Monet's Water Lilies pattern, cotton paper, boho aesthetic. Gift for book lovers."
+								rows={3}
+								readOnly
+								className="resize-none text-sm"
+							/>
+						</div>
 					</div>
 				) : (
 					<>
