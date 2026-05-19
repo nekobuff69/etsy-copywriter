@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import {
@@ -35,23 +35,31 @@ function parseHash(): { groupKey: string | null; sessionId: string | null } {
 export function useHistory() {
 	const router = useRouter();
 
-	const [groups, setGroups] = useState<ImageGroup[]>(() =>
-		typeof window !== "undefined" ? groupSessionsByImage(getSessions()) : [],
-	);
+	const [groups, setGroups] = useState<ImageGroup[]>([]);
 	const [expandedGroupHash, setExpandedGroupHash] = useState<string | null>(null);
 	const [expandedSessionId, setExpandedSessionId] = useState<string | null>(null);
-	const [groupTitles, setGroupTitlesState] = useState<Record<string, string>>(() => {
-		if (typeof window === "undefined") return {};
-		const raw = localStorage.getItem("etsy-copywriter-group-titles");
-		return raw ? JSON.parse(raw) : {};
-	});
+	const [groupTitles, setGroupTitlesState] = useState<Record<string, string>>({});
 
-	// Process hash on mount — auto-expand the group/session referenced
+	// Hydrate from localStorage on mount, then process hash
+	const hydrated = useRef(false);
+
 	useEffect(() => {
+		if (hydrated.current) return;
+		hydrated.current = true;
+
+		// Load sessions and group titles from localStorage
+		setGroups(groupSessionsByImage(getSessions()));
+		const raw = localStorage.getItem("etsy-copywriter-group-titles");
+		if (raw) {
+			try {
+				setGroupTitlesState(JSON.parse(raw));
+			} catch { /* ignore parse errors */ }
+		}
+
+		// Process hash — auto-expand the group/session referenced
 		const { groupKey, sessionId } = parseHash();
 		if (!groupKey) return;
 
-		// Defer so groups are already set from the first effect
 		const timer = setTimeout(() => {
 			setExpandedGroupHash(groupKey);
 			if (sessionId) {
@@ -76,7 +84,9 @@ export function useHistory() {
 	}, []);
 
 	const reloadGroups = useCallback(() => {
-		setGroups(groupSessionsByImage(getSessions()));
+		if (hydrated.current) {
+			setGroups(groupSessionsByImage(getSessions()));
+		}
 	}, []);
 
 	const toggleGroup = useCallback((hash: string) => {
