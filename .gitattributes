@@ -1,0 +1,8 @@
+# Binary files — no line-ending normalization, no diff
+*.mp4 binary
+*.mov binary
+*.png binary
+*.jpg binary
+*.jpeg binary
+*.gif binary
+*.webp binary
