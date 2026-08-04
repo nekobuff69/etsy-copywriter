@@ -2,7 +2,7 @@
 
 Upload a product photo, get a structured description back, then turn it into Etsy listing copy. Single-page workspace, streaming output, dark mode, history.
 
-<video src="docs/demo/demo.mp4" controls width="100%">
+<video src="https://raw.githubusercontent.com/nekobuff69/etsy-copywriter/main/docs/demo/demo.mp4" controls width="100%">
   Your browser does not support the video tag.
 </video>
 
